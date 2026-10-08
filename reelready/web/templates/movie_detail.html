@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
+{% block title %}{{ movie.title }} · ReelReady{% endblock %}
+{% block content %}
+<div style="margin-bottom:18px"><a class="muted" href="/movies?tab={{ movie.status }}">← 返回{{ status_label }}</a></div>
+
+<section class="detail-hero">
+  <div class="detail-poster">
+    <img src="/posters/{{ movie.id }}" alt="" referrerpolicy="no-referrer"
+         onerror="this.onerror=null;this.src='/static/poster-placeholder.svg'">
+  </div>
+  <div>
+    <div class="detail-title">{{ movie.title }}</div>
+    {% if movie.original_title and movie.original_title != movie.title %}
+      <div class="detail-original">{{ movie.original_title }}</div>
+    {% endif %}
+    <div class="detail-meta">
+      <span class="pill stage-{{ movie.stage }}">{{ movie.stage_label }}</span>
+      <span class="pill no-dot">{{ status_label }}</span>
+      {% if movie.year %}<span class="pill no-dot">{{ movie.year }}</span>{% endif %}
+      <span class="faint small">来源：{{ {"douban": "豆瓣热映", "tmdb": "TMDB 院线", "manual": "手动添加"}[movie.source] }} · 加入于 {{ movie.created_at | when }}</span>
+    </div>
+
+    <div class="detail-ratings">
+      {% if movie.douban_rating %}
+      <div class="score-box douban"><div class="num">{{ "%.1f"|format(movie.douban_rating) }}</div><div class="lbl">豆瓣 · {{ movie.douban_votes or 0 }} 人</div></div>
+      {% endif %}
+      {% if movie.tmdb_rating %}
+      <div class="score-box tmdb"><div class="num">{{ "%.1f"|format(movie.tmdb_rating) }}</div><div class="lbl">TMDB · {{ movie.tmdb_votes or 0 }} 票</div></div>
+      {% endif %}
+    </div>
+
+    {% if movie.overview %}<div class="overview">{{ movie.overview }}</div>{% endif %}
+
+    <div class="links">
+      {% if movie.douban_url %}<a class="btn btn-sm" href="{{ movie.douban_url }}" target="_blank" rel="noreferrer">豆瓣 {{ icon("external") }}</a>{% endif %}
+      {% if movie.tmdb_url %}<a class="btn btn-sm" href="{{ movie.tmdb_url }}" target="_blank" rel="noreferrer">TMDB {{ icon("external") }}</a>{% endif %}
+      {% if movie.imdb_url %}<a class="btn btn-sm" href="{{ movie.imdb_url }}" target="_blank" rel="noreferrer">IMDb {{ icon("external") }}</a>{% endif %}
+    </div>
+
+    <div class="detail-actions">
+      {% if movie.status == "candidate" %}
+        <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/approve" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("check") }}加入监测</button>
+        <button class="btn" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}不要</button>
+      {% elif movie.status == "monitoring" %}
+        <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/search" hx-swap="none">{{ icon("search") }}立即搜索 PT</button>
+        <button class="btn" hx-post="/movies/{{ movie.id }}/check" hx-swap="none">{{ icon("refresh") }}立即检测上线</button>
+        <button class="btn btn-danger" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}移入黑名单</button>
+      {% elif movie.status == "completed" %}
+        <button class="btn" hx-post="/movies/{{ movie.id }}/redownload" hx-swap="none"
+                hx-confirm="把《{{ movie.title }}》重新放回监测并再次搜索下载？">{{ icon("refresh") }}重新搜索下载</button>
+      {% elif movie.status == "ignored" %}
+        <button class="btn" hx-post="/movies/{{ movie.id }}/restore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("undo") }}移出黑名单</button>
+      {% endif %}
+      <button class="btn btn-ghost btn-danger" hx-post="/movies/{{ movie.id }}/delete" hx-swap="none"
+              hx-confirm="彻底删除《{{ movie.title }}》？删除后它可能被重新收集，不想再看到请用黑名单。">{{ icon("trash") }}删除</button>
+    </div>
+  </div>
+</section>
+
+<section class="panel" style="margin-top:30px">
+  <div class="stepper">
+    {% for value, label in stages %}
+    <div class="step {{ 'done' if movie.stage >= value }} {{ 'current' if movie.stage == value }}">
+      <span class="dot">{% if movie.stage >= value %}✓{% else %}{{ loop.index }}{% endif %}</span>
+      <span class="label">{{ label }}</span>
+      {% if not loop.last %}<span class="line"></span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="grid-2" style="margin-top:18px">
+  <section class="panel">
+    <h2>上线情况</h2>
+    <dl class="kv">
+      <dt>数字版日期</dt><dd>{{ movie.digital_date or "暂无" }}</dd>
+      <dt>可看平台</dt>
+      <dd>
+        {% for name in movie.streaming or [] %}<span class="tag">{{ name }}</span>{% else %}暂无{% endfor %}
+      </dd>
+      <dt>上次检测</dt><dd>{{ movie.last_checked_at | when }}</dd>
+    </dl>
+  </section>
+  <section class="panel">
+    <h2>下载</h2>
+    {% if movie.downloaded %}
+    <dl class="kv">
+      <dt>种子</dt>
+      <dd>{% if movie.downloaded.detail_url %}<a href="{{ movie.downloaded.detail_url }}" target="_blank" rel="noreferrer">{{ movie.downloaded.title }}</a>{% else %}{{ movie.downloaded.title }}{% endif %}</dd>
+      <dt>站点</dt><dd>{{ movie.downloaded.site }}</dd>
+      <dt>体积</dt><dd>{{ movie.downloaded.size_bytes | filesize }}</dd>
+      <dt>推送时间</dt><dd>{{ movie.downloaded.at }}</dd>
+    </dl>
+    {% else %}
+    <dl class="kv">
+      <dt>上次搜索</dt><dd>{{ movie.last_pt_scan_at | when }}</dd>
+      <dt>结果</dt><dd>{{ movie.last_pt_summary or "还没有搜索过" }}</dd>
+    </dl>
+    {% endif %}
+  </section>
+</div>
+
+{% if movie.last_pt_candidates %}
+<section class="panel" style="margin-top:18px">
+  <div class="panel-head">
+    <h2>上次搜索到的种子</h2>
+    <span class="faint small">按选种规则排序，第一个符合要求的会被自动下载</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>种子</th><th>站点</th><th>体积</th><th>做种</th><th>判定</th><th></th></tr></thead>
+      <tbody>
+      {% for t in movie.last_pt_candidates %}
+        <tr class="{{ '' if t.ok else 'rejected' }}">
+          <td>
+            <div class="t-title">{% if t.detail_url %}<a href="{{ t.detail_url }}" target="_blank" rel="noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}</div>
+            {% if t.subtitle %}<div class="t-sub">{{ t.subtitle }}</div>{% endif %}
+            <div style="margin-top:4px">{% for tag in t.tags %}<span class="tag {{ 'hl' if t.ok }}">{{ tag }}</span>{% endfor %}</div>
+          </td>
+          <td class="num">{{ t.site_name }}</td>
+          <td class="num">{{ t.size_bytes | filesize }}</td>
+          <td class="num">{{ t.seeders }}</td>
+          <td class="num">{% if t.ok %}<span class="pill ok">符合</span>{% else %}<span class="faint small">{{ t.reason }}</span>{% endif %}</td>
+          <td class="num">
+            <button class="btn btn-sm" hx-post="/movies/{{ movie.id }}/download/{{ loop.index0 }}" hx-swap="none"
+                    hx-confirm="把这个种子推送到 qBittorrent？">{{ icon("download") }}下载</button>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel" style="margin-top:18px">
+  <h2>动态</h2>
+  {% if events %}
+  <ul class="timeline">
+    {% for e in events %}
+    <li class="{{ 'urgent' if e.urgent }}">
+      <div class="ev-title">{{ e.title }}</div>
+      {% if e.message %}<div class="ev-msg">{{ e.message }}</div>{% endif %}
+      <div class="ev-time">{{ e.created_at.strftime("%Y-%m-%d %H:%M") }}</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="muted">暂无动态</div>
+  {% endif %}
+</section>
+{% endblock %}

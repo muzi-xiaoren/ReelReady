@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
+{% block title %}动态 · ReelReady{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>动态</h1>
+    <div class="subtitle">定档、上线、下载、站点失效等事件；标红的会立即发邮件，其余进每日汇总</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <a class="tab {{ 'active' if not kind }}" href="/events">全部</a>
+  {% for key, label in kind_labels.items() %}
+  <a class="tab {{ 'active' if kind == key }}" href="/events?kind={{ key }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<section class="panel">
+  {% for e in events %}
+  <div class="event-row">
+    <div class="event-kind">
+      <span class="pill {{ 'error' if e.urgent and e.kind != 'downloaded' else ('ok' if e.kind == 'downloaded' else 'no-dot') }}">{{ kind_labels.get(e.kind, e.kind) }}</span>
+    </div>
+    <div class="event-body">
+      <div style="font-weight:600">
+        {% if e.movie_id %}<a href="/movies/{{ e.movie_id }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
+      </div>
+      {% if e.message %}<div class="muted" style="white-space:pre-line">{{ e.message }}</div>{% endif %}
+    </div>
+    <div class="event-time" title="{{ e.created_at }}">
+      {{ e.created_at | when }}
+      <div class="faint">{% if e.kind != "added" %}{{ "已通知" if e.notified else ("待发送" if e.urgent else "待汇总") }}{% endif %}</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty" style="border:none">
+    {{ icon("inbox") }}
+    <div class="title">还没有动态</div>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

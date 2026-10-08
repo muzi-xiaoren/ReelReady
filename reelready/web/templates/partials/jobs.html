@@ -1,0 +1,21 @@
+{% from "partials/icons.html" import icon %}
+<div class="jobs" id="jobs" hx-get="/jobs" hx-trigger="every 20s" hx-swap="outerHTML">
+  {% for job in jobs %}
+  <div class="job">
+    <span class="job-dot {{ 'running' if job.running else (job.status or '') }}"></span>
+    <div class="job-body">
+      <div class="job-name">{{ job.label }}</div>
+      <div class="job-meta" title="{{ job.message or '' }}">
+        {% if job.running %}正在运行…
+        {% elif job.last_run %}{{ job.last_run | when }} · {{ job.message or '' }}
+        {% else %}尚未运行{% endif %}
+      </div>
+      {% if not job.running and job.next_run %}
+      <div class="job-meta">下次 {{ job.next_run | when }}</div>
+      {% endif %}
+    </div>
+    <button class="btn btn-ghost btn-icon btn-sm" title="立即运行"
+            hx-post="/jobs/{{ job.name }}/run" hx-swap="none">{{ icon("play") }}</button>
+  </div>
+  {% endfor %}
+</div>

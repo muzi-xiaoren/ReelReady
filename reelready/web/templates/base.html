@@ -1,0 +1,40 @@
+{% from "partials/icons.html" import icon %}<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ReelReady{% endblock %}</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}">
+  <script src="/static/vendor/htmx.min.js"></script>
+  <script>
+    // Local runs without the Docker image have no vendored copy; fall back to the CDN.
+    window.htmx || document.write('<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"><\/script>');
+  </script>
+</head>
+<body hx-boost="false">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/movies">
+        <span class="brand-mark">{{ icon("reel") }}</span>
+        ReelReady
+      </a>
+      <nav class="nav">
+        <a href="/movies" class="{{ 'active' if nav == 'movies' }}">影片</a>
+        <a href="/events" class="{{ 'active' if nav == 'events' }}">动态</a>
+        <a href="/sites" class="{{ 'active' if nav == 'sites' }}">站点</a>
+        <a href="/settings" class="{{ 'active' if nav == 'settings' }}">设置</a>
+      </nav>
+      <div class="spacer"></div>
+      <span class="version">v{{ version }}</span>
+    </div>
+  </header>
+
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="toasts" aria-live="polite"></div>
+  <script src="/static/app.js?v={{ version }}"></script>
+</body>
+</html>

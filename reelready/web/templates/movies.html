@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
+{% block title %}影片 · ReelReady{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>影片</h1>
+    <div class="subtitle">收集院线高分片，等它上线网络后自动下载</div>
+  </div>
+  <div class="add-bar">
+    <form hx-post="/movies/add" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()">
+      <input type="text" name="ref" placeholder="粘贴豆瓣 / TMDB / IMDb 链接手动添加" required>
+      <button class="btn btn-primary" type="submit">{{ icon("plus") }}添加</button>
+    </form>
+  </div>
+</div>
+
+{% include "partials/jobs.html" %}
+
+<div class="page-head" style="margin-bottom:16px;align-items:center">
+  <div class="tabs" style="margin:0">
+    {% for key, label, count in tabs %}
+    <a class="tab {{ 'active' if key == tab }}" href="/movies?tab={{ key }}">{{ label }}<span class="count">{{ count }}</span></a>
+    {% endfor %}
+  </div>
+  <form class="search" method="get" action="/movies">
+    {{ icon("search") }}
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <input type="text" name="q" value="{{ q }}" placeholder="搜索片名">
+  </form>
+</div>
+
+{% if movies %}
+<div class="movie-grid">
+  {% for m in movies %}{% include "partials/movie_card.html" %}{% endfor %}
+</div>
+{% else %}
+<div class="empty">
+  {{ icon("film") }}
+  {% if q %}
+    <div class="title">没有找到「{{ q }}」</div>
+  {% elif tab == "candidate" %}
+    <div class="title">暂时没有待确认的影片</div>
+    <div>收集任务会定期把院线高分片放到这里，你可以点上方的 ▶ 立即收集一次。</div>
+  {% elif tab == "monitoring" %}
+    <div class="title">还没有监测中的影片</div>
+    <div>到「待确认」里挑几部，或者直接粘贴豆瓣链接添加。</div>
+  {% elif tab == "completed" %}
+    <div class="title">还没有下载过影片</div>
+    <div>监测中的影片一旦在 PT 站出现符合要求的资源，就会自动推送到 qBittorrent。</div>
+  {% else %}
+    <div class="title">黑名单是空的</div>
+    <div>移入黑名单的影片不会再被收集。</div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

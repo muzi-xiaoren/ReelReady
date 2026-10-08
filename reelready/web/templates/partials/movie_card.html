@@ -1,0 +1,46 @@
+{% from "partials/icons.html" import icon %}
+<article class="movie-card">
+  <a class="poster" href="/movies/{{ m.id }}">
+    <img src="/posters/{{ m.id }}" alt="" loading="lazy" referrerpolicy="no-referrer"
+         onerror="this.onerror=null;this.src='/static/poster-placeholder.svg'">
+    <span class="stage"><span class="pill stage-{{ m.stage }}">{{ m.stage_label }}</span></span>
+    <span class="ratings">
+      {% if m.douban_rating %}<span class="rating douban"><span class="src">豆</span>{{ "%.1f"|format(m.douban_rating) }}</span>{% endif %}
+      {% if m.tmdb_rating %}<span class="rating tmdb"><span class="src">TMDB</span>{{ "%.1f"|format(m.tmdb_rating) }}</span>{% endif %}
+    </span>
+  </a>
+  <div class="movie-info">
+    <a class="movie-title" href="/movies/{{ m.id }}">{{ m.title }}</a>
+    <div class="movie-sub">{{ m.year or "" }}{% if m.original_title and m.original_title != m.title %} · {{ m.original_title }}{% endif %}</div>
+    {% if m.status == "completed" and m.downloaded %}
+      <div class="movie-note">{{ m.downloaded.title }}</div>
+    {% elif m.status == "monitoring" %}
+      {% if m.streaming %}
+        <div class="movie-note">{{ m.streaming[:3] | join("、") }}{% if m.streaming|length > 3 %} 等{% endif %}</div>
+      {% elif m.digital_date %}
+        <div class="movie-note">预计 {{ m.digital_date }} 上线</div>
+      {% endif %}
+      {% if m.last_pt_summary %}<div class="movie-note faint">PT：{{ m.last_pt_summary }}</div>{% endif %}
+    {% endif %}
+  </div>
+  <div class="movie-actions">
+    {% if m.status == "candidate" %}
+      <button class="btn btn-primary btn-sm" hx-post="/movies/{{ m.id }}/approve"
+              hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("check") }}监测</button>
+      <button class="btn btn-sm" hx-post="/movies/{{ m.id }}/ignore"
+              hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}不要</button>
+    {% elif m.status == "monitoring" %}
+      <button class="btn btn-sm" hx-post="/movies/{{ m.id }}/search" hx-swap="none">{{ icon("search") }}搜 PT</button>
+      <button class="btn btn-sm btn-icon" title="立即检测上线状态" hx-post="/movies/{{ m.id }}/check" hx-swap="none">{{ icon("refresh") }}</button>
+      <button class="btn btn-sm btn-icon btn-danger" title="移入黑名单" hx-post="/movies/{{ m.id }}/ignore"
+              hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}</button>
+    {% elif m.status == "completed" %}
+      <a class="btn btn-sm" href="/movies/{{ m.id }}">{{ icon("eye") }}详情</a>
+    {% elif m.status == "ignored" %}
+      <button class="btn btn-sm" hx-post="/movies/{{ m.id }}/restore"
+              hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("undo") }}恢复</button>
+      <button class="btn btn-sm btn-icon btn-danger" title="彻底删除（之后可能被重新收集）"
+              hx-post="/movies/{{ m.id }}/delete" hx-confirm="彻底删除《{{ m.title }}》？删除后它可能被重新收集。">{{ icon("trash") }}</button>
+    {% endif %}
+  </div>
+</article>

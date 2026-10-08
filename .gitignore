@@ -1,0 +1,14 @@
+# Runtime data (database, cookies, secrets, cached posters)
+data/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+.idea/
+.vscode/
+
+# Fetched at image build time
+reelready/web/static/vendor/

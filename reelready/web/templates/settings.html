@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
+{% block title %}设置 · ReelReady{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>设置</h1>
+    <div class="subtitle">每个分组单独保存，改完立即生效</div>
+  </div>
+</div>
+
+{% set tests = {"email": ("/test/email", "发送测试邮件"), "qbittorrent": ("/test/qbittorrent", "测试连接"), "tmdb": ("/test/tmdb", "测试连接")} %}
+
+<div class="settings-layout">
+  <nav class="settings-nav">
+    {% for key, label, fields in sections %}<a href="#{{ key }}">{{ label }}</a>{% endfor %}
+  </nav>
+  <div>
+    {% for key, label, fields in sections %}
+    <section class="panel settings-section" id="{{ key }}">
+      <h2>{{ label }}</h2>
+      <form hx-post="/settings/{{ key }}" hx-swap="none">
+        <div class="form-grid">
+          {% for f in fields %}
+          <div class="field {{ 'bool' if f.kind == 'bool' }} {{ 'wide' if f.kind == 'list' or f.name in ('user_agent', 'url', 'proxy_url', 'api_key') }}"
+               {% if f.custom_only %}data-custom-only{% endif %}>
+            {% if f.kind == "bool" %}
+              <label class="switch">
+                <input type="checkbox" name="{{ f.name }}" {{ "checked" if f.value }}>
+                <span class="track"></span>
+                <span>{{ f.title }}{% if f.help %}<span class="help" style="display:block;margin-top:2px">{{ f.help }}</span>{% endif %}</span>
+              </label>
+            {% else %}
+              <label class="title" for="{{ key }}-{{ f.name }}">{{ f.title }}</label>
+              {% if f.kind == "choice" %}
+                <select id="{{ key }}-{{ f.name }}" name="{{ f.name }}" {% if key == "email" and f.name == "provider" %}data-email-provider{% endif %}>
+                  {% for value, text in f.choices.items() %}
+                  <option value="{{ value }}" {{ "selected" if value == f.value }}>{{ text }}</option>
+                  {% endfor %}
+                </select>
+              {% elif f.kind == "secret" %}
+                <div class="copy-field">
+                  <input type="password" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" autocomplete="new-password"
+                         placeholder="{{ '已设置，留空保持不变' if f.value else '未设置' }}">
+                  <button class="btn btn-icon" type="button" data-reveal="#{{ key }}-{{ f.name }}" title="显示">{{ icon("eye") }}</button>
+                </div>
+              {% elif f.kind in ("int", "float") %}
+                <input type="number" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}" step="{{ '1' if f.kind == 'int' else 'any' }}">
+              {% else %}
+                <input type="text" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}">
+              {% endif %}
+              {% if f.help %}<div class="help">{{ f.help }}</div>{% endif %}
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">保存</button>
+          {% if key in tests %}
+          <button class="btn" type="button" hx-post="{{ tests[key][0] }}" hx-swap="none"
+                  title="请先保存再测试">{{ tests[key][1] }}</button>
+          {% endif %}
+        </div>
+      </form>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
