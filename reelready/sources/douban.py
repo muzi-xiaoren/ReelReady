@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from ..http import make_client
+from .movie_metadata import douban_details
 
 API = "https://m.douban.com/rexxar/api/v2"
 MOBILE_UA = (
@@ -39,6 +40,9 @@ class DoubanMovie:
     # Names of the platforms Douban lists under "在线观看" (腾讯视频, 爱奇艺, ...).
     vendors: list[str] = field(default_factory=list)
     pre_playable_date: str | None = None
+    release_date: str | None = None
+    imdb_id: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 def parse_douban_id(text: str) -> str | None:
@@ -120,6 +124,7 @@ class DoubanClient:
                         title=item.get("title") or "",
                         original_title=item.get("original_title") or None,
                         year=_year(item.get("year")),
+                        release_date=item.get("release_date") or None,
                         rating=rating,
                         votes=votes,
                         cover=_cover(item),
@@ -138,12 +143,15 @@ class DoubanClient:
             title=data.get("title") or "",
             original_title=data.get("original_title") or None,
             year=_year(data.get("year")),
+            release_date=data.get("release_date") or None,
             rating=rating,
             votes=votes,
             cover=_cover(data),
             intro=data.get("intro") or None,
             vendors=vendors,
             pre_playable_date=data.get("pre_playable_date") or None,
+            imdb_id=data.get("imdb_id") or None,
+            details=douban_details(data),
         )
 
     def search(self, query: str, count: int = 10) -> list[DoubanMovie]:

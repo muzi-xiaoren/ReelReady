@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ReelReady{% endblock %}</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/style.css?v={{ version }}">
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}-detail2">
   <script src="/static/vendor/htmx.min.js"></script>
   <script>
     // Local runs without the Docker image have no vendored copy; fall back to the CDN.
@@ -35,6 +35,15 @@
   </main>
 
   <div id="toasts" aria-live="polite"></div>
-  <script src="/static/app.js?v={{ version }}"></script>
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message confirm-description">
+    <form method="dialog">
+      <div class="confirm-symbol" id="confirm-symbol">{{ icon("trash") }}</div>
+      <h2 id="confirm-title">确认操作</h2>
+      <p id="confirm-message"></p>
+      <p id="confirm-description" class="confirm-description"></p>
+      <div class="confirm-actions"><button class="btn" value="cancel" autofocus>取消</button><button class="btn btn-primary" id="confirm-accept" value="accept">确认</button></div>
+    </form>
+  </dialog>
+  <script src="/static/app.js?v={{ version }}-autosave2"></script>
 </body>
 </html>

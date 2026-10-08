@@ -2,10 +2,14 @@ from ..models import Site
 from .base import BaseSite, LoginExpired, MovieQuery, SiteConfig, SiteError
 from .mteam import MTeamSite
 from .nexusphp import NexusPHPSite
+from .unit3d import Unit3DSite
+from .rousipro import RousiProSite
 
 SITE_KINDS = {
     "mteam": "馒头 (M-Team)",
     "nexusphp": "NexusPHP",
+    "unit3d": "Monikadesign (Cookie)",
+    "rousipro": "Rousi Pro (API Key)",
 }
 
 __all__ = [
@@ -37,4 +41,8 @@ def build_site(config: SiteConfig, proxy: str | None = None) -> BaseSite:
         return MTeamSite(config, proxy)
     if config.kind == "nexusphp":
         return NexusPHPSite(config, proxy)
+    if config.kind == "unit3d":
+        return Unit3DSite(config, proxy)
+    if config.kind == "rousipro":
+        return RousiProSite(config, proxy)
     raise SiteError(f"不支持的站点类型: {config.kind}")

@@ -12,7 +12,7 @@ from .events import add_event
 from .movies import (
     cache_poster,
     link_ids,
-    min_year,
+    within_collection_window,
     ratings_text,
     upsert_candidate_douban,
     upsert_candidate_tmdb,
@@ -46,7 +46,7 @@ def run_collect(settings: AppSettings) -> str:
 def _douban_qualifies(settings: AppSettings, item: DoubanMovie) -> bool:
     c = settings.collect
     return (
-        (item.year or 0) >= min_year(settings)
+        within_collection_window(settings, item.year, item.release_date)
         and item.rating is not None
         and item.rating >= c.douban_min_rating
         and (item.votes or 0) >= c.douban_min_votes
@@ -56,7 +56,7 @@ def _douban_qualifies(settings: AppSettings, item: DoubanMovie) -> bool:
 def _tmdb_qualifies(settings: AppSettings, item: TMDBMovie) -> bool:
     c = settings.collect
     return (
-        (item.year or 0) >= min_year(settings)
+        within_collection_window(settings, item.year, item.release_date)
         and item.rating is not None
         and item.rating >= c.tmdb_min_rating
         and (item.votes or 0) >= c.tmdb_min_votes

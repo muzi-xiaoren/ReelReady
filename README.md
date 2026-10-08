@@ -60,7 +60,9 @@ docker compose up -d
 在「站点」页添加 PT 站：
 
 - **馒头**：在馒头网页的「控制台 → 实验室 → 存取令牌」生成 API Key，填入即可
-- **NexusPHP 站**：推荐用 CookieCloud 自动同步（见下一节），也可以手动粘贴 cookie
+- **Rousi Pro**：使用新版 PeerGo API v1。选择「Rousi Pro (API Key)」，填写账户设置中创建的个人 API Key（需要 profile:read、torrent:read、torrent:download 权限）。浏览器 Cookie 不替代 API Key；下载通过详情接口返回的临时签名链接完成。
+- **Monikadesign**：可用 CookieCloud 同步登录 Cookie，或手动选择「Monikadesign (Cookie)」添加；已提供 Unit3D 网页登录检查、搜索和种子下载适配。
+- **NexusPHP 站（包括 QingWa）**：推荐用 CookieCloud 自动同步（见下一节），也可以手动粘贴 cookie
 
 ## 用 CookieCloud 同步 cookie
 
@@ -72,6 +74,8 @@ docker compose up -d
 4. 在扩展里点「手动同步」，刷新「站点」页，识别出的 NexusPHP 站会出现在「添加站点」里，点一下就能添加
 
 之后你只要在浏览器里正常登录 PT 站，扩展就会定时把新 cookie 推给 ReelReady。如果 cookie 失效，ReelReady 会发邮件提醒你；在浏览器里重新登录一次，下次同步后就会自动恢复。
+
+站点识别结合本地 [PT-Depiler](https://github.com/pt-plugins/PT-depiler) 公开站点库和 NexusPHP Cookie 特征，不需要向第三方发送 Cookie。只把含非空、未过期登录 Cookie 的站点列为候选，浏览标记、广告及 Cloudflare Cookie 不作为登录依据。服务端是否仍认可登录，需要添加后测试；其他架构的 PT 站单独列为浏览记录。添加会立即入列，连接测试在独立后台队列进行（最多 2 个并行、16 个等待及测试中任务），页面自动更新测试结果；相同站点及已知别名由数据库唯一约束防止重复添加。漏识别的站点可选择「NexusPHP」，在地址框中选择已同步域名或手动填写。站点库来源版本记录在 `reelready/sites/catalog.json`，MIT 声明保存在同目录的 `PT_DEPILER_LICENSE.txt`；可用 `python tools/import_pt_depiler.py <PT-Depiler源码目录>` 更新本地站点库。
 
 > cookie 以加密形式保存在本机的 `data/` 目录，不会上传到任何第三方。
 

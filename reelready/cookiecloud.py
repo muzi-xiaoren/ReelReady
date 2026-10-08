@@ -11,13 +11,13 @@ stock extension can push straight to it. Payloads are encrypted with a key deriv
 import base64
 import hashlib
 import json
+import time
 from typing import Any
 from urllib.parse import urlsplit
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
-
-from .sites.nexusphp import NEXUSPHP_COOKIES
+from .sites.catalog import lookup_site
 
 
 class CookieCloudError(Exception):
@@ -75,15 +75,89 @@ def cookie_header_for(data: dict[str, Any], url: str) -> str | None:
         return None
     jar: dict[str, str] = {}
     for cookie in _iter_cookies(data):
-        if _domain_matches(host, cookie["domain"]):
+        if (
+            _cookie_active(cookie)
+            and _domain_matches(host, cookie["domain"])
+            and (not cookie.get("hostOnly") or host == cookie["domain"].lstrip(".").lower())
+        ):
             jar[cookie["name"]] = cookie.get("value", "")
     return "; ".join(f"{k}={v}" for k, v in jar.items()) or None
 
 
 def detect_nexusphp_hosts(data: dict[str, Any]) -> list[str]:
-    """Domains that carry NexusPHP login cookies, i.e. NexusPHP sites the user is logged into."""
+    """Suggest NexusPHP domains from distinctive cookies, without assuming login is valid."""
     names_by_domain: dict[str, set[str]] = {}
     for cookie in _iter_cookies(data):
+        if not _cookie_active(cookie):
+            continue
         domain = cookie["domain"].lstrip(".").lower()
         names_by_domain.setdefault(domain, set()).add(cookie["name"])
-    return sorted(d for d, names in names_by_domain.items() if NEXUSPHP_COOKIES <= names)
+    detected = set()
+    for domain, names in names_by_domain.items():
+        site = lookup_site(domain)
+        if site is not None:
+            if site["schema"] == "NexusPHP" and _has_login_cookies(names, site["id"]):
+                detected.add(domain)
+        elif "c_secure_pass" in names or {"nexusphp_uid", "nexusphp_token"} <= names:
+            detected.add(domain)
+    # Do not discard a www host with login cookies in favor of a bare host that only
+    # carries analytics/Cloudflare cookies; host-only cookies cannot log into both.
+    for host in sorted(detected):
+        if host.startswith("www.") and host[4:] in detected:
+            bare = host[4:]
+            if _login_cookie_strength(names_by_domain[host]) > _login_cookie_strength(names_by_domain[bare]):
+                detected.remove(bare)
+            else:
+                detected.remove(host)
+    return sorted(detected)
+
+
+def _cookie_active(cookie: dict[str, Any]) -> bool:
+    if not cookie.get("value"):
+        return False
+    expires = cookie.get("expirationDate")
+    return expires is None or expires > time.time()
+
+
+def _has_login_cookies(names: set[str], site_id: str) -> bool:
+    if _login_cookie_strength(names):
+        return True
+    # Custom authentication names are used only for their registered site.
+    custom = {
+        "springsunday": {"SPRINGID"},
+        "qingwa": {"qw_session"},
+        "tjupt": {"access_token"},
+        "byr": {"auth_token", "refresh_token"},
+        "byrbt": {"auth_token", "refresh_token"},
+        "filept": {"sid"},
+        "bitbr": {"sid"},
+    }
+    required = custom.get(site_id)
+    return bool(required and required <= names)
+
+
+def _login_cookie_strength(names: set[str]) -> int:
+    if {"c_secure_uid", "c_secure_pass"} <= names or {"nexusphp_uid", "nexusphp_token"} <= names:
+        return 2
+    return int("c_secure_pass" in names)
+
+
+def synced_cookie_hosts(data: dict[str, Any]) -> list[str]:
+    """All synced domains, available for manual selection without classifying them as PT."""
+    return sorted({c["domain"].lstrip(".").lower() for c in _iter_cookies(data)})
+
+
+def detect_cookie_hosts(data: dict[str, Any]) -> list[str]:
+    hosts = set(detect_nexusphp_hosts(data))
+    for cookie in _iter_cookies(data):
+        entry = lookup_site(cookie["domain"])
+        if entry and entry["id"] == "monikadesign" and _cookie_active(cookie):
+            name = cookie["name"]
+            if name.startswith("remember_web_") or name == "monikadesign_session":
+                hosts.add(cookie["domain"].lstrip(".").lower())
+    # Known mirrors represent one site. Keep credentials on their actual host.
+    choices = {}
+    for host in sorted(hosts):
+        entry = lookup_site(host)
+        choices.setdefault(entry["id"] if entry else host, host)
+    return sorted(choices.values())

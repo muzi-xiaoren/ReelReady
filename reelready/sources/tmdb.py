@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from ..http import make_client
+from .movie_metadata import tmdb_details
 
 API = "https://api.themoviedb.org/3"
 IMAGE_BASE = "https://image.tmdb.org/t/p/w342"
@@ -38,6 +39,8 @@ class TMDBMovie:
     imdb_id: str | None = None
     digital_date: str | None = None
     providers: list[str] = field(default_factory=list)
+    release_date: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 def parse_tmdb_id(text: str) -> int | None:
@@ -58,6 +61,7 @@ def _from_payload(data: dict[str, Any]) -> TMDBMovie:
         title=data.get("title") or data.get("original_title") or "",
         original_title=data.get("original_title") or None,
         year=int(release[:4]) if release[:4].isdigit() else None,
+        release_date=release or None,
         rating=data.get("vote_average"),
         votes=data.get("vote_count"),
         poster=f"{IMAGE_BASE}{poster}" if poster else None,
@@ -134,12 +138,13 @@ class TMDBClient:
 
     def movie(self, tmdb_id: int, provider_regions: list[str] | None = None) -> TMDBMovie:
         data = self._get(
-            f"/movie/{tmdb_id}", append_to_response="release_dates,watch/providers,external_ids"
+            f"/movie/{tmdb_id}", append_to_response="release_dates,watch/providers,external_ids,credits"
         )
         movie = _from_payload(data)
         movie.imdb_id = data.get("imdb_id") or (data.get("external_ids") or {}).get("imdb_id") or None
         movie.digital_date = earliest_digital_date(data)
         movie.providers = providers_in(data, provider_regions or [])
+        movie.details = tmdb_details(data)
         return movie
 
     def find_by_imdb(self, imdb_id: str) -> TMDBMovie | None:

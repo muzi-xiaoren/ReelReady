@@ -1,0 +1,3320 @@
+{
+  "source": "https://github.com/pt-plugins/PT-depiler",
+  "revision": "3295c53749069b2ea14d818d251dbb0b27387b16",
+  "license": "MIT",
+  "sites": [
+    {
+      "id": "0dayfiles",
+      "name": "0DayFiles",
+      "schema": "Unit3D",
+      "urls": [
+        "https://0dayfiles.net/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "13city",
+      "name": "13city",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://13city.org/",
+        "https://www.13city.org/"
+      ],
+      "is_dead": false,
+      "icon": "13city.ico"
+    },
+    {
+      "id": "1ptba",
+      "name": "1PTBar",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://1ptba.com/"
+      ],
+      "is_dead": false,
+      "icon": "1ptba.ico"
+    },
+    {
+      "id": "2xfree",
+      "name": "2xFree",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.2xfree.org/"
+      ],
+      "is_dead": true,
+      "icon": "2xfree.png"
+    },
+    {
+      "id": "52movie",
+      "name": "52movie",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.52movie.top/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "52pt",
+      "name": "52PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://52pt.site/"
+      ],
+      "is_dead": false,
+      "icon": "52pt.ico"
+    },
+    {
+      "id": "abtorrents",
+      "name": "ABTorrents",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://usefultrash.net/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "afun",
+      "name": "Afun",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.ptlover.cc/"
+      ],
+      "is_dead": true,
+      "icon": "afun.ico"
+    },
+    {
+      "id": "agsvpt",
+      "name": "AGSVPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.agsvpt.cn/",
+        "https://www.agsvpt.com/",
+        "https://new.agsvpt.cn/"
+      ],
+      "is_dead": false,
+      "icon": "agsvpt.png"
+    },
+    {
+      "id": "aidoruonline",
+      "name": "Aidoru!Online",
+      "schema": "AidoruOnline",
+      "urls": [
+        "https://aidoru-online.me/"
+      ],
+      "is_dead": false,
+      "icon": "aidoruonline.ico"
+    },
+    {
+      "id": "aither",
+      "name": "Aither",
+      "schema": "Unit3D",
+      "urls": [
+        "https://aither.cc/"
+      ],
+      "is_dead": false,
+      "icon": "aither.ico"
+    },
+    {
+      "id": "alingpt",
+      "name": "alingPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.aling.de/"
+      ],
+      "is_dead": false,
+      "icon": "alingpt.ico"
+    },
+    {
+      "id": "alpharatio",
+      "name": "AlphaRatio",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://alpharatio.cc/"
+      ],
+      "is_dead": false,
+      "icon": "alpharatio.ico"
+    },
+    {
+      "id": "animebytes",
+      "name": "AnimeBytes",
+      "schema": "Gazelle",
+      "urls": [
+        "https://animebytes.tv/"
+      ],
+      "is_dead": false,
+      "icon": "animebytes.ico"
+    },
+    {
+      "id": "animelovers",
+      "name": "ANIMELOVERS",
+      "schema": "Unit3D",
+      "urls": [
+        "https://animelovers.club/"
+      ],
+      "is_dead": true,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "animez",
+      "name": "AnimeZ",
+      "schema": "AvistazNetwork",
+      "urls": [
+        "https://animez.to/"
+      ],
+      "is_dead": false,
+      "icon": "animez.png"
+    },
+    {
+      "id": "anthelion",
+      "name": "Anthelion",
+      "schema": "Gazelle",
+      "urls": [
+        "https://anthelion.me/"
+      ],
+      "is_dead": false,
+      "icon": "anthelion.ico"
+    },
+    {
+      "id": "asiancinema",
+      "name": "AsianCinema",
+      "schema": "Unit3D",
+      "urls": [
+        "https://eiga.moi/"
+      ],
+      "is_dead": false,
+      "icon": "asiancinema.ico"
+    },
+    {
+      "id": "asmrpt",
+      "name": "ASMR PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.asmrpt.org/"
+      ],
+      "is_dead": true,
+      "icon": "asmrpt.png"
+    },
+    {
+      "id": "audiences",
+      "name": "Audiences",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://audiences.me/"
+      ],
+      "is_dead": false,
+      "icon": "audiences.ico"
+    },
+    {
+      "id": "audionews",
+      "name": "AudioNews",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://audionews.org/"
+      ],
+      "is_dead": false,
+      "icon": "audionews.ico"
+    },
+    {
+      "id": "aura4k",
+      "name": "Aura4k",
+      "schema": "Unit3D",
+      "urls": [
+        "https://aura4k.net/"
+      ],
+      "is_dead": true,
+      "icon": "aura4k.png"
+    },
+    {
+      "id": "avgv",
+      "name": "爱薇网",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://avgv.cc/"
+      ],
+      "is_dead": true,
+      "icon": "avgv.ico"
+    },
+    {
+      "id": "avistaz",
+      "name": "AvistaZ",
+      "schema": "AvistazNetwork",
+      "urls": [
+        "https://avistaz.to/"
+      ],
+      "is_dead": false,
+      "icon": "avistaz.png"
+    },
+    {
+      "id": "awesomehd",
+      "name": "Awesome-HD",
+      "schema": "Gazelle",
+      "urls": [
+        "https://awesome-hd.me/"
+      ],
+      "is_dead": true,
+      "icon": "awesomehd.ico"
+    },
+    {
+      "id": "azusa",
+      "name": "梓喵",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://azusa.wiki/"
+      ],
+      "is_dead": false,
+      "icon": "azusa.ico"
+    },
+    {
+      "id": "baconbits",
+      "name": "baconBits",
+      "schema": "custom",
+      "urls": [
+        "https://baconbits.org/"
+      ],
+      "is_dead": true,
+      "icon": "baconbits.ico"
+    },
+    {
+      "id": "bakabt",
+      "name": "BakaBT",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://bakabt.me/"
+      ],
+      "is_dead": false,
+      "icon": "bakabt.png"
+    },
+    {
+      "id": "baozi",
+      "name": "包子",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://p.t-baozi.cc/"
+      ],
+      "is_dead": false,
+      "icon": "baozi.png"
+    },
+    {
+      "id": "beitai",
+      "name": "备胎",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.beitai.pt/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "bemaniso",
+      "name": "Bemaniso",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://bemaniso.ws/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "beyondhd",
+      "name": "BeyondHD",
+      "schema": "F3NIX",
+      "urls": [
+        "https://beyond-hd.me/"
+      ],
+      "is_dead": false,
+      "icon": "beyondhd.ico"
+    },
+    {
+      "id": "bibliotik",
+      "name": "Bibliotik",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://bibliotik.me/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "bitbr",
+      "name": "bitbr",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://bitbr.cc/"
+      ],
+      "is_dead": true,
+      "icon": "bitbr.ico"
+    },
+    {
+      "id": "bitporn",
+      "name": "BitPorn",
+      "schema": "Unit3D",
+      "urls": [
+        "https://bitporn.eu/"
+      ],
+      "is_dead": false,
+      "icon": "bitporn.ico"
+    },
+    {
+      "id": "bitpt",
+      "name": "极速之星",
+      "schema": "custom",
+      "urls": [
+        "https://bitpt.cn/"
+      ],
+      "is_dead": false,
+      "icon": "bitpt.ico"
+    },
+    {
+      "id": "blutopia",
+      "name": "Blutopia",
+      "schema": "Unit3D",
+      "urls": [
+        "https://blutopia.cc/"
+      ],
+      "is_dead": false,
+      "icon": "blutopia.ico"
+    },
+    {
+      "id": "broadcasthenet",
+      "name": "BroadcastTheNet",
+      "schema": "Gazelle",
+      "urls": [
+        "https://broadcasthe.net/"
+      ],
+      "is_dead": false,
+      "icon": "broadcasthenet.ico"
+    },
+    {
+      "id": "brokenstones",
+      "name": "BrokenStones",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://brokenstones.is/"
+      ],
+      "is_dead": false,
+      "icon": "brokenstones.ico"
+    },
+    {
+      "id": "btschool",
+      "name": "BTSCHOOL",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.btschool.club/"
+      ],
+      "is_dead": false,
+      "icon": "btschool.ico"
+    },
+    {
+      "id": "bwtorrents",
+      "name": "BWT",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://bwtorrents.tv/",
+        "https://bwtorrents.cc/",
+        "https://bwtorrents.xyz/",
+        "https://bwtorrents.us/"
+      ],
+      "is_dead": false,
+      "icon": "bwtorrents.ico"
+    },
+    {
+      "id": "byrbt",
+      "name": "北邮人-BYRBT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://byr.pt/"
+      ],
+      "is_dead": false,
+      "icon": "byrbt.ico"
+    },
+    {
+      "id": "capybarabr",
+      "name": "CapybaraBR",
+      "schema": "Unit3D",
+      "urls": [
+        "https://capybarabr.com/"
+      ],
+      "is_dead": false,
+      "icon": "capybarabr.ico"
+    },
+    {
+      "id": "carpt",
+      "name": "CarPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://carpt.net/"
+      ],
+      "is_dead": false,
+      "icon": "carpt.ico"
+    },
+    {
+      "id": "cathoderaytube",
+      "name": "Cathode-Ray.Tube",
+      "schema": "Luminance",
+      "urls": [
+        "https://www.cathode-ray.tube/"
+      ],
+      "is_dead": false,
+      "icon": "cathoderaytube.ico"
+    },
+    {
+      "id": "cbg",
+      "name": "藏宝阁",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://cangbao.ge/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "ccfbits",
+      "name": "CCFBits",
+      "schema": "TBSource",
+      "urls": [
+        "https://ccfbits.org/"
+      ],
+      "is_dead": true,
+      "icon": "ccfbits.ico"
+    },
+    {
+      "id": "cdfile",
+      "name": "CD File",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.cdfile.org/"
+      ],
+      "is_dead": true
+    },
+    {
+      "id": "cdy",
+      "name": "传道院",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.cdy.pics/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "ceskeforum",
+      "name": "CeskeForum",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://t.ceskeforum.com/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "cgpeers",
+      "name": "CGPeers",
+      "schema": "Luminance",
+      "urls": [
+        "https://cgpeers.to/"
+      ],
+      "is_dead": false,
+      "icon": "cgpeers.ico"
+    },
+    {
+      "id": "chdbits",
+      "name": "CHDBits",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptchdbits.co/"
+      ],
+      "is_dead": false,
+      "icon": "chdbits.ico"
+    },
+    {
+      "id": "cinemageddon",
+      "name": "Cinemageddon",
+      "schema": "custom",
+      "urls": [
+        "https://cinemageddon.net/"
+      ],
+      "is_dead": false,
+      "icon": "cinemageddon.ico"
+    },
+    {
+      "id": "cinematik",
+      "name": "Cinematik",
+      "schema": "Unit3D",
+      "urls": [
+        "https://cinematik.net/"
+      ],
+      "is_dead": false,
+      "icon": "cinematik.ico"
+    },
+    {
+      "id": "cinemaz",
+      "name": "CinemaZ",
+      "schema": "AvistazNetwork",
+      "urls": [
+        "https://cinemaz.to/"
+      ],
+      "is_dead": false,
+      "icon": "cinemaz.png"
+    },
+    {
+      "id": "clearjav",
+      "name": "ClearJAV",
+      "schema": "Unit3D",
+      "urls": [
+        "https://clearjav.com/"
+      ],
+      "is_dead": false,
+      "icon": "clearjav.ico"
+    },
+    {
+      "id": "cnlang",
+      "name": "国语视界",
+      "schema": "Discuz",
+      "urls": [
+        "https://cnlang.org/"
+      ],
+      "is_dead": true,
+      "icon": "cnlang.ico"
+    },
+    {
+      "id": "cnscg",
+      "name": "圣城家园PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.cnscg.club/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "concen",
+      "name": "ConCen",
+      "schema": "custom",
+      "urls": [
+        "https://concen.org/"
+      ],
+      "is_dead": true,
+      "icon": "concen.ico"
+    },
+    {
+      "id": "concertos",
+      "name": "Concertos",
+      "schema": "Unit3D",
+      "urls": [
+        "https://concertos.live/"
+      ],
+      "is_dead": false,
+      "icon": "concertos.ico"
+    },
+    {
+      "id": "crabpt",
+      "name": "CrabPt",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://crabpt.vip/"
+      ],
+      "is_dead": false,
+      "icon": "crabpt.ico"
+    },
+    {
+      "id": "cspt",
+      "name": "财神",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://cspt.top/",
+        "https://cspt.cc/",
+        "https://cspt.date/"
+      ],
+      "is_dead": false,
+      "icon": "cspt.ico"
+    },
+    {
+      "id": "cyanbug",
+      "name": "CyanBug",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://cyanbug.net/"
+      ],
+      "is_dead": false,
+      "icon": "cyanbug.ico"
+    },
+    {
+      "id": "dabaojian",
+      "name": "大宝剑",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.525968.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "dajiao",
+      "name": "DAJIAO",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://dajiao.cyou/"
+      ],
+      "is_dead": true,
+      "icon": "dajiao.png"
+    },
+    {
+      "id": "danishbytes",
+      "name": "DanishBytes",
+      "schema": "Unit3D",
+      "urls": [
+        "https://danishbytes.club/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "darkland",
+      "name": "Darkland",
+      "schema": "Unit3D",
+      "urls": [
+        "https://darkland.top/"
+      ],
+      "is_dead": false,
+      "icon": "darkland.png"
+    },
+    {
+      "id": "darkpeers",
+      "name": "darkpeers",
+      "schema": "Unit3D",
+      "urls": [
+        "https://darkpeers.org/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "datascene",
+      "name": "DataScene",
+      "schema": "Unit3D",
+      "urls": [
+        "https://datascene.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "datascene.ico"
+    },
+    {
+      "id": "daxiangjiao",
+      "name": "DaXiangJiao",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.daxiangjiao.org/"
+      ],
+      "is_dead": false,
+      "icon": "daxiangjiao.ico"
+    },
+    {
+      "id": "desigaane",
+      "name": "DesiGaane",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://desigaane.rocks/"
+      ],
+      "is_dead": false,
+      "icon": "desigaane.png"
+    },
+    {
+      "id": "desitorrents",
+      "name": "DesiTorrents",
+      "schema": "Unit3D",
+      "urls": [
+        "https://torrent.desi/",
+        "https://desitorrents.tv/",
+        "https://desitorrents.rocks/"
+      ],
+      "is_dead": false,
+      "icon": "desitorrents.ico"
+    },
+    {
+      "id": "dhtclub",
+      "name": "DHTCLUB PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.dhtclub.com/"
+      ],
+      "is_dead": true,
+      "icon": "dhtclub.ico"
+    },
+    {
+      "id": "dicmusic",
+      "name": "DICMusic",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://dicmusic.com/"
+      ],
+      "is_dead": false,
+      "icon": "dicmusic.ico"
+    },
+    {
+      "id": "digitalcore",
+      "name": "DigitalCore",
+      "schema": "Rartracker",
+      "urls": [
+        "https://digitalcore.club/"
+      ],
+      "is_dead": false,
+      "icon": "digitalcore.ico"
+    },
+    {
+      "id": "discfan",
+      "name": "DiscFan",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://discfan.net/"
+      ],
+      "is_dead": false,
+      "icon": "discfan.ico"
+    },
+    {
+      "id": "dragonhd",
+      "name": "龍之家",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.dragonhd.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "dragonhd.ico"
+    },
+    {
+      "id": "dstudio",
+      "name": "Depth Studio",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://dstudio.me/"
+      ],
+      "is_dead": false,
+      "icon": "dstudio.ico"
+    },
+    {
+      "id": "dubhe",
+      "name": "天枢",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://dubhe.site/"
+      ],
+      "is_dead": false,
+      "icon": "dubhe.ico"
+    },
+    {
+      "id": "dxdhd",
+      "name": "DXDHD",
+      "schema": "Unit3D",
+      "urls": [
+        "https://dxdhd.com/"
+      ],
+      "is_dead": true,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "ecustpt",
+      "name": "ECUSTPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.ecust.pp.ua/"
+      ],
+      "is_dead": true,
+      "icon": "ecustpt.png"
+    },
+    {
+      "id": "empornium",
+      "name": "Empornium",
+      "schema": "Luminance",
+      "urls": [
+        "https://emparadise.rs/",
+        "https://www.empornium.sx/"
+      ],
+      "is_dead": false,
+      "icon": "empornium.ico"
+    },
+    {
+      "id": "emuwarez",
+      "name": "eMuwarez",
+      "schema": "Unit3D",
+      "urls": [
+        "https://emuwarez.com/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "exoticaz",
+      "name": "ExoticaZ",
+      "schema": "AvistazNetwork",
+      "urls": [
+        "https://exoticaz.to/"
+      ],
+      "is_dead": false,
+      "icon": "exoticaz.png"
+    },
+    {
+      "id": "fappaizuri",
+      "name": "Fappaizuri",
+      "schema": "Fappaizuri",
+      "urls": [
+        "https://www.fappaizuri.me/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "fearnopeer",
+      "name": "FearNoPeer",
+      "schema": "Unit3D",
+      "urls": [
+        "https://fearnopeer.com/"
+      ],
+      "is_dead": true,
+      "icon": "fearnopeer.ico"
+    },
+    {
+      "id": "femdomcult",
+      "name": "Femdomcult",
+      "schema": "Luminance",
+      "urls": [
+        "https://femdomcult.org/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "fhpt",
+      "name": "凤凰PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.521.best/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "filelist",
+      "name": "FileList",
+      "schema": "FileList",
+      "urls": [
+        "https://filelist.io/"
+      ],
+      "is_dead": false,
+      "icon": "filelist.ico"
+    },
+    {
+      "id": "filept",
+      "name": "Filept",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.filept.com/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "freefarm",
+      "name": "自由农场",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.0ff.cc/"
+      ],
+      "is_dead": false,
+      "icon": "freefarm.ico"
+    },
+    {
+      "id": "fsm",
+      "name": "FSM",
+      "schema": "FSM",
+      "urls": [
+        "https://fsm.name/"
+      ],
+      "is_dead": true,
+      "icon": "fsm.jpg"
+    },
+    {
+      "id": "gainbound",
+      "name": "丐帮",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://gainbound.net/"
+      ],
+      "is_dead": true,
+      "icon": "gainbound.ico"
+    },
+    {
+      "id": "gazellegames",
+      "name": "GazelleGames",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://gazellegames.net/"
+      ],
+      "is_dead": false,
+      "icon": "gazellegames.ico"
+    },
+    {
+      "id": "geminitracker",
+      "name": "GeminiTracker",
+      "schema": "Unit3D",
+      "urls": [
+        "https://gemini-tracker.org/"
+      ],
+      "is_dead": false,
+      "icon": "geminitracker.png"
+    },
+    {
+      "id": "generationfree",
+      "name": "Generation-Free",
+      "schema": "Unit3D",
+      "urls": [
+        "https://generation-free.org/"
+      ],
+      "is_dead": false,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "gfxpeers",
+      "name": "GFXPeers",
+      "schema": "Gazelle",
+      "urls": [
+        "https://gfxpeers.net/"
+      ],
+      "is_dead": true,
+      "icon": "gfxpeers.ico"
+    },
+    {
+      "id": "ggpt",
+      "name": "GGPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.gamegamept.com/"
+      ],
+      "is_dead": false,
+      "icon": "ggpt.ico"
+    },
+    {
+      "id": "greatposterwall",
+      "name": "GreatPosterWall",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://greatposterwall.com/"
+      ],
+      "is_dead": false,
+      "icon": "greatposterwall.png"
+    },
+    {
+      "id": "gtnet",
+      "name": "Gay-Torrents.net",
+      "schema": "custom",
+      "urls": [
+        "https://www.gay-torrents.net/"
+      ],
+      "is_dead": false,
+      "icon": "gtnet.ico"
+    },
+    {
+      "id": "gtorg",
+      "name": "Gay-Torrents.Org",
+      "schema": "custom",
+      "urls": [
+        "https://gay-torrents.org/"
+      ],
+      "is_dead": true,
+      "icon": "gtorg.png"
+    },
+    {
+      "id": "gtru",
+      "name": "GayTorrent.ru",
+      "schema": "custom",
+      "urls": [
+        "https://www.gaytor.rent/"
+      ],
+      "is_dead": false,
+      "icon": "gtru.ico"
+    },
+    {
+      "id": "haidan",
+      "name": "海胆",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.haidan.cc/"
+      ],
+      "is_dead": false,
+      "icon": "haidan.png"
+    },
+    {
+      "id": "happyfappy",
+      "name": "HappyFappy",
+      "schema": "Luminance",
+      "urls": [
+        "https://www.happyfappy.net/"
+      ],
+      "is_dead": false,
+      "icon": "happyfappy.ico"
+    },
+    {
+      "id": "hares",
+      "name": "HaresClub",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://club.hares.top/"
+      ],
+      "is_dead": true,
+      "icon": "hares.png"
+    },
+    {
+      "id": "hd4fans",
+      "name": "HD4FANS",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.hd4fans.org/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "hd4free",
+      "name": "HD4Free",
+      "schema": "Unit3D",
+      "urls": [
+        "https://hd4.xyz/"
+      ],
+      "is_dead": true,
+      "icon": "hd4free.ico"
+    },
+    {
+      "id": "hdai",
+      "name": "HDAI",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.hd.ai/"
+      ],
+      "is_dead": true,
+      "icon": "hdai.png"
+    },
+    {
+      "id": "hdarea",
+      "name": "HDArea",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdarea.club/"
+      ],
+      "is_dead": false,
+      "icon": "hdarea.ico"
+    },
+    {
+      "id": "hdatmos",
+      "name": "HDATMOS",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdatmos.club/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "hdbao",
+      "name": "HDBao",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdbao.cc/"
+      ],
+      "is_dead": false,
+      "icon": "hdbao.ico"
+    },
+    {
+      "id": "hdbits",
+      "name": "HDBits",
+      "schema": "custom",
+      "urls": [
+        "https://hdbits.org/"
+      ],
+      "is_dead": false,
+      "icon": "hdbits.ico"
+    },
+    {
+      "id": "hdchina",
+      "name": "HDChina",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdchina.org/"
+      ],
+      "is_dead": true,
+      "icon": "hdchina.jpg"
+    },
+    {
+      "id": "hdcity",
+      "name": "HDCity",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdcity.city/",
+        "https://hdcity.leniter.org/",
+        "https://hdcity.work/"
+      ],
+      "is_dead": false,
+      "icon": "hdcity.png"
+    },
+    {
+      "id": "hdclone",
+      "name": "HDClone",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.hdclone.top/"
+      ],
+      "is_dead": false,
+      "icon": "hdclone.ico"
+    },
+    {
+      "id": "hddisk",
+      "name": "HDDisk",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hddisk.org/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "hddolby",
+      "name": "HD Dolby",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.hddolby.com/"
+      ],
+      "is_dead": false,
+      "icon": "hddolby.ico"
+    },
+    {
+      "id": "hdf",
+      "name": "HD-Forever",
+      "schema": "Gazelle",
+      "urls": [
+        "https://hdf.world/"
+      ],
+      "is_dead": false,
+      "icon": "hdf.ico"
+    },
+    {
+      "id": "hdfans",
+      "name": "HDFans",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdfans.org/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "hdhome",
+      "name": "HDHome",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdhome.org/"
+      ],
+      "is_dead": false,
+      "icon": "hdhome.ico"
+    },
+    {
+      "id": "hdkylin",
+      "name": "HDKylin",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.hdkyl.in/",
+        "https://na.hdkylin.com/",
+        "https://cf.hdkylin.com/"
+      ],
+      "is_dead": false,
+      "icon": "hdkylin.png"
+    },
+    {
+      "id": "hdmayi",
+      "name": "HDmayi",
+      "schema": "NexusPHP",
+      "urls": [
+        "http://hdmayi.com/"
+      ],
+      "is_dead": true,
+      "icon": "hdmayi.ico"
+    },
+    {
+      "id": "hdpost",
+      "name": "HDPOST",
+      "schema": "Unit3D",
+      "urls": [
+        "https://pt.hdpost.top/"
+      ],
+      "is_dead": true,
+      "icon": "hdpost.png"
+    },
+    {
+      "id": "hdpt",
+      "name": "明教",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdpt.xyz/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "hdroute",
+      "name": "HDRoute",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "http://hdroute.org/"
+      ],
+      "is_dead": false,
+      "icon": "hdroute.ico"
+    },
+    {
+      "id": "hdsky",
+      "name": "HDSky",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdsky.me/"
+      ],
+      "is_dead": false,
+      "icon": "hdsky.png"
+    },
+    {
+      "id": "hdspace",
+      "name": "HD-Space",
+      "schema": "XBTIT",
+      "urls": [
+        "https://hd-space.org/"
+      ],
+      "is_dead": false,
+      "icon": "hdspace.ico"
+    },
+    {
+      "id": "hdstreet",
+      "name": "高清街",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdstreet.club/"
+      ],
+      "is_dead": true,
+      "icon": "hdstreet.ico"
+    },
+    {
+      "id": "hdtime",
+      "name": "HDTime",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdtime.org/"
+      ],
+      "is_dead": false,
+      "icon": "hdtime.ico"
+    },
+    {
+      "id": "hdtorrents",
+      "name": "HD-Torrents",
+      "schema": "XBTIT",
+      "urls": [
+        "https://hd-torrents.org/",
+        "https://hd-torrents.net/",
+        "https://hd-torrents.me/",
+        "https://hdts.ru/"
+      ],
+      "is_dead": false,
+      "icon": "hdtorrents.ico"
+    },
+    {
+      "id": "hdunited",
+      "name": "HD-UNiT3D",
+      "schema": "Unit3D",
+      "urls": [
+        "https://hd-united.vn/"
+      ],
+      "is_dead": false,
+      "icon": "hdunited.png"
+    },
+    {
+      "id": "hdupt",
+      "name": "HDU",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.hdupt.com/",
+        "https://pt.upxin.net/"
+      ],
+      "is_dead": false,
+      "icon": "hdupt.ico"
+    },
+    {
+      "id": "hdvideo",
+      "name": "HDVideo",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdvideo.top/"
+      ],
+      "is_dead": false,
+      "icon": "hdvideo.png"
+    },
+    {
+      "id": "hdzone",
+      "name": "HDZone",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hdfun.me/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "hellenichd",
+      "name": "HELLENIC-HD",
+      "schema": "Unit3D",
+      "urls": [
+        "https://hellenic-hd.cc/"
+      ],
+      "is_dead": false,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "hhanclub",
+      "name": "憨憨",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hhanclub.net/"
+      ],
+      "is_dead": false,
+      "icon": "hhanclub.png"
+    },
+    {
+      "id": "hitpt",
+      "name": "百川PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.hitpt.com/"
+      ],
+      "is_dead": false,
+      "icon": "hitpt.ico"
+    },
+    {
+      "id": "homiehelpdesk",
+      "name": "HomieHelpdesk",
+      "schema": "Unit3D",
+      "urls": [
+        "https://homiehelpdesk.net/"
+      ],
+      "is_dead": false,
+      "icon": "homiehelpdesk.png"
+    },
+    {
+      "id": "hqmusic",
+      "name": "HQMusic",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://tracker.hqmusic.info/"
+      ],
+      "is_dead": false,
+      "icon": "hqmusic.png"
+    },
+    {
+      "id": "hspt",
+      "name": "回声PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hspt.club/"
+      ],
+      "is_dead": true,
+      "icon": "hspt.png"
+    },
+    {
+      "id": "htpt",
+      "name": "海棠PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.htpt.cc/",
+        "https://htpt.cc/"
+      ],
+      "is_dead": false,
+      "icon": "htpt.png"
+    },
+    {
+      "id": "hudbt",
+      "name": "蝴蝶-HUDBT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hudbt.hust.edu.cn/"
+      ],
+      "is_dead": false,
+      "icon": "hudbt.png"
+    },
+    {
+      "id": "huno",
+      "name": "HUNO",
+      "schema": "Unit3D",
+      "urls": [
+        "https://hawke.uno/"
+      ],
+      "is_dead": false,
+      "icon": "huno.ico"
+    },
+    {
+      "id": "hxpt",
+      "name": "好学",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.hxpt.org/"
+      ],
+      "is_dead": false,
+      "icon": "hxpt.png"
+    },
+    {
+      "id": "ianon",
+      "name": "iAnon",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://ianon.app/"
+      ],
+      "is_dead": true,
+      "icon": "ianon.ico"
+    },
+    {
+      "id": "icc2022",
+      "name": "ICC",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.icc2022.com/"
+      ],
+      "is_dead": true,
+      "icon": "icc2022.ico"
+    },
+    {
+      "id": "ihdbits",
+      "name": "iHDBits",
+      "schema": "NexusPHP",
+      "urls": [
+        "http://ihdbits.me/",
+        "https://pt.newworld.plus/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "ilolicon",
+      "name": "ilolicon",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://mua.xloli.cc/"
+      ],
+      "is_dead": false,
+      "icon": "ilolicon.ico"
+    },
+    {
+      "id": "iptorrents",
+      "name": "IPTorrents",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://iptorrents.com/"
+      ],
+      "is_dead": false,
+      "icon": "iptorrents.ico"
+    },
+    {
+      "id": "itzmx",
+      "name": "PT分享站",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.itzmx.com/"
+      ],
+      "is_dead": false,
+      "icon": "itzmx.ico"
+    },
+    {
+      "id": "joyhd",
+      "name": "JoyHD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.joyhd.net/"
+      ],
+      "is_dead": true,
+      "icon": "joyhd.png"
+    },
+    {
+      "id": "jpopsuki",
+      "name": "JPopSuki",
+      "schema": "Gazelle",
+      "urls": [
+        "https://jpopsuki.eu/"
+      ],
+      "is_dead": false,
+      "icon": "jpopsuki.ico"
+    },
+    {
+      "id": "jptv4us",
+      "name": "JPTV4us",
+      "schema": "Unit3D",
+      "urls": [
+        "https://jptv4.us/"
+      ],
+      "is_dead": false,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "jptvclub",
+      "name": "JPTVClub",
+      "schema": "Unit3D",
+      "urls": [
+        "https://jptv.club/"
+      ],
+      "is_dead": true,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "kamept",
+      "name": "KamePT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://kamept.com/"
+      ],
+      "is_dead": false,
+      "icon": "kamept.png"
+    },
+    {
+      "id": "karagarga",
+      "name": "KaraGarga",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://karagarga.in/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "keepfrds",
+      "name": "PT@KEEPFRDS",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.keepfrds.com/"
+      ],
+      "is_dead": false,
+      "icon": "keepfrds.png"
+    },
+    {
+      "id": "kelu",
+      "name": "Kelu",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://our.kelu.one/"
+      ],
+      "is_dead": false,
+      "icon": "kelu.ico"
+    },
+    {
+      "id": "kimoji",
+      "name": "KIMOJI",
+      "schema": "Unit3D",
+      "urls": [
+        "https://kimoji.club/"
+      ],
+      "is_dead": true,
+      "icon": "kimoji.ico"
+    },
+    {
+      "id": "kufei",
+      "name": "库非",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://kufei.org/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "kufirc",
+      "name": "kufirc",
+      "schema": "Luminance",
+      "urls": [
+        "https://kufirc.com/"
+      ],
+      "is_dead": false,
+      "icon": "kufirc.png"
+    },
+    {
+      "id": "kunlun",
+      "name": "昆仑",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.yhpp.cc/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "lajidui",
+      "name": "lajidui",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.lajidui.top/"
+      ],
+      "is_dead": false,
+      "icon": "lajidui.ico"
+    },
+    {
+      "id": "latteam",
+      "name": "LAT-Team",
+      "schema": "Unit3D",
+      "urls": [
+        "https://lat-team.com/"
+      ],
+      "is_dead": false,
+      "icon": "latteam.ico"
+    },
+    {
+      "id": "learnflakes",
+      "name": "LearnFlakes",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://learnflakes.net/"
+      ],
+      "is_dead": false,
+      "icon": "learnflakes.ico"
+    },
+    {
+      "id": "lemonhd",
+      "name": "LemonHD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://lemonhd.club/"
+      ],
+      "is_dead": true
+    },
+    {
+      "id": "lemonhdnet",
+      "name": "柠檬不甜",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://lemonhd.net/"
+      ],
+      "is_dead": false,
+      "icon": "lemonhdnet.ico"
+    },
+    {
+      "id": "lemonhdorg",
+      "name": "LemonHD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://lemonhd.org/"
+      ],
+      "is_dead": true,
+      "icon": "lemonhdorg.ico"
+    },
+    {
+      "id": "longpt",
+      "name": "LongPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://longpt.org/",
+        "https://wiiii.dpdns.org/"
+      ],
+      "is_dead": false,
+      "icon": "longpt.png"
+    },
+    {
+      "id": "losslessclub",
+      "name": "LosslessClub",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://losslessclub.com/"
+      ],
+      "is_dead": false,
+      "icon": "losslessclub.ico"
+    },
+    {
+      "id": "lpbits",
+      "name": "LP-Bits",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://lp-bits.com/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "lst",
+      "name": "LST",
+      "schema": "Unit3D",
+      "urls": [
+        "https://lst.gg/"
+      ],
+      "is_dead": false,
+      "icon": "lst.ico"
+    },
+    {
+      "id": "luckpt",
+      "name": "LuckPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.luckpt.de/"
+      ],
+      "is_dead": false,
+      "icon": "luckpt.png"
+    },
+    {
+      "id": "luminarr",
+      "name": "Luminarr",
+      "schema": "Unit3D",
+      "urls": [
+        "https://luminarr.me/"
+      ],
+      "is_dead": false,
+      "icon": "luminarr.ico"
+    },
+    {
+      "id": "lztr",
+      "name": "LzTr",
+      "schema": "Gazelle",
+      "urls": [
+        "https://lztr.me/"
+      ],
+      "is_dead": false,
+      "icon": "lztr.ico"
+    },
+    {
+      "id": "march",
+      "name": "March-Media",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://duckboobee.org/",
+        "https://marchcms.org/"
+      ],
+      "is_dead": false,
+      "icon": "march.png"
+    },
+    {
+      "id": "midnightscene",
+      "name": "MidnightScene",
+      "schema": "Unit3D",
+      "urls": [
+        "https://midnightscene.cc/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "milkie",
+      "name": "Milkie",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://milkie.cc/"
+      ],
+      "is_dead": false,
+      "icon": "milkie.png"
+    },
+    {
+      "id": "minept",
+      "name": "MINE.pt",
+      "schema": "meanTorrent",
+      "urls": [
+        "https://mine.pt/"
+      ],
+      "is_dead": true,
+      "icon": "minept.ico"
+    },
+    {
+      "id": "moecat",
+      "name": "MoeCat",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://moecat.best/"
+      ],
+      "is_dead": true,
+      "icon": "moecat.ico"
+    },
+    {
+      "id": "momentpt",
+      "name": "MomentPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.momentpt.top/"
+      ],
+      "is_dead": false,
+      "icon": "momentpt.ico"
+    },
+    {
+      "id": "monikadesign",
+      "name": "Monikadesign",
+      "schema": "Unit3D",
+      "urls": [
+        "https://monikadesign.uk/"
+      ],
+      "is_dead": false,
+      "icon": "monikadesign.ico"
+    },
+    {
+      "id": "mooko",
+      "name": "MooKo",
+      "schema": "Gazelle",
+      "urls": [
+        "https://mooko.org/"
+      ],
+      "is_dead": true,
+      "icon": "mooko.png"
+    },
+    {
+      "id": "morethantv",
+      "name": "MoreThanTV",
+      "schema": "Luminance",
+      "urls": [
+        "https://www.morethantv.me/"
+      ],
+      "is_dead": true,
+      "icon": "morethantv.ico"
+    },
+    {
+      "id": "mteam",
+      "name": "M-Team - TP",
+      "schema": "mTorrent",
+      "urls": [
+        "https://kp.m-team.cc/",
+        "https://zp.m-team.io/",
+        "https://ob.m-team.cc/",
+        "https://h5.m-team.cc/"
+      ],
+      "is_dead": false,
+      "icon": "mteam.ico"
+    },
+    {
+      "id": "musopia",
+      "name": "音乐乌托邦",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.musopia.vip/",
+        "https://pt.xzt.me/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "muxuege",
+      "name": "慕雪阁",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.muxuege.org/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "myanonamouse",
+      "name": "MyAnonamouse",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://www.myanonamouse.net/"
+      ],
+      "is_dead": false,
+      "icon": "myanonamouse.ico"
+    },
+    {
+      "id": "mypt",
+      "name": "MyPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://cc.mypt.cc/"
+      ],
+      "is_dead": false,
+      "icon": "mypt.ico"
+    },
+    {
+      "id": "nanyangpt",
+      "name": "南洋PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://nanyangpt.com/"
+      ],
+      "is_dead": false,
+      "icon": "nanyangpt.png"
+    },
+    {
+      "id": "ncore",
+      "name": "nCore",
+      "schema": "custom",
+      "urls": [
+        "https://ncore.pro/"
+      ],
+      "is_dead": false,
+      "icon": "ncore.ico"
+    },
+    {
+      "id": "nebulance",
+      "name": "Nebulance",
+      "schema": "Gazelle",
+      "urls": [
+        "https://nebulance.io/"
+      ],
+      "is_dead": false,
+      "icon": "nebulance.png"
+    },
+    {
+      "id": "neu6",
+      "name": "六维空间",
+      "schema": "NexusPHP",
+      "urls": [
+        "http://bt.neu6.edu.cn/"
+      ],
+      "is_dead": true,
+      "icon": "neu6.png"
+    },
+    {
+      "id": "nexushd",
+      "name": "NexusHD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://v6.nexushd.org/",
+        "https://www.nexushd.org/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "nicept",
+      "name": "NicePT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.nicept.net/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "njtupt",
+      "name": "浦园",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://njtupt.top/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "nordicbytes",
+      "name": "NordicBytes",
+      "schema": "Unit3D",
+      "urls": [
+        "https://nordicbytes.org/"
+      ],
+      "is_dead": false,
+      "icon": "nordicbytes.png"
+    },
+    {
+      "id": "nordicquality",
+      "name": "NordicQuality",
+      "schema": "Unit3D",
+      "urls": [
+        "https://nordicq.org/"
+      ],
+      "is_dead": false,
+      "icon": "nordicquality.ico"
+    },
+    {
+      "id": "novahd",
+      "name": "NovaHD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.novahd.top/",
+        "https://tracker.novahd.top/"
+      ],
+      "is_dead": false,
+      "icon": "novahd.ico"
+    },
+    {
+      "id": "npupt",
+      "name": "NPUBits",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://npupt.com/"
+      ],
+      "is_dead": true,
+      "icon": "npupt.ico"
+    },
+    {
+      "id": "nwsuaf6",
+      "name": "麦田PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.nwsuaf6.edu.cn/"
+      ],
+      "is_dead": true,
+      "icon": "nwsuaf6.ico"
+    },
+    {
+      "id": "okpt",
+      "name": "OKPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.okpt.net/"
+      ],
+      "is_dead": false,
+      "icon": "okpt.png"
+    },
+    {
+      "id": "oldtoonsworld",
+      "name": "OldToonsWorld",
+      "schema": "Unit3D",
+      "urls": [
+        "https://oldtoons.world/"
+      ],
+      "is_dead": false,
+      "icon": "oldtoonsworld.png"
+    },
+    {
+      "id": "onlyencodes",
+      "name": "OnlyEncodes+",
+      "schema": "Unit3D",
+      "urls": [
+        "https://onlyencodes.cc/"
+      ],
+      "is_dead": false,
+      "icon": "onlyencodes.ico"
+    },
+    {
+      "id": "opencd",
+      "name": "OpenCD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://open.cd/",
+        "https://www.open.cd/"
+      ],
+      "is_dead": false,
+      "icon": "opencd.ico"
+    },
+    {
+      "id": "oppaiti",
+      "name": "Oppaitime",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://oppaiti.me/"
+      ],
+      "is_dead": true,
+      "icon": "oppaiti.ico"
+    },
+    {
+      "id": "orpheus",
+      "name": "Orpheus",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://orpheus.network/"
+      ],
+      "is_dead": false,
+      "icon": "orpheus.png"
+    },
+    {
+      "id": "oshenpt",
+      "name": "OshenPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.oshen.win/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "ourbits",
+      "name": "OurBits",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ourbits.club/",
+        "https://www.ourbits.club/",
+        "https://pt.ourhelp.club/"
+      ],
+      "is_dead": false,
+      "icon": "ourbits.ico"
+    },
+    {
+      "id": "pandapt",
+      "name": "PandaPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pandapt.net/"
+      ],
+      "is_dead": false,
+      "icon": "pandapt.png"
+    },
+    {
+      "id": "passthepopcorn",
+      "name": "PassThePopcorn",
+      "schema": "Gazelle",
+      "urls": [
+        "https://passthepopcorn.me/"
+      ],
+      "is_dead": false,
+      "icon": "passthepopcorn.png"
+    },
+    {
+      "id": "piggo",
+      "name": "Piggo",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://piggo.me/"
+      ],
+      "is_dead": false,
+      "icon": "piggo.ico"
+    },
+    {
+      "id": "pixelcove",
+      "name": "PixelCove",
+      "schema": "Luminance",
+      "urls": [
+        "https://www.pixelcove.me/"
+      ],
+      "is_dead": false,
+      "icon": "pixelcove.png"
+    },
+    {
+      "id": "playletpt",
+      "name": "PlayLet",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://playlet.cc/"
+      ],
+      "is_dead": false,
+      "icon": "playletpt.ico"
+    },
+    {
+      "id": "polishtorrent",
+      "name": "PolishTorrent",
+      "schema": "Unit3D",
+      "urls": [
+        "https://polishtorrent.top/"
+      ],
+      "is_dead": false,
+      "icon": "polishtorrent.png"
+    },
+    {
+      "id": "pornbay",
+      "name": "Pornbay",
+      "schema": "Luminance",
+      "urls": [
+        "https://pornbay.org/"
+      ],
+      "is_dead": true,
+      "icon": "pornbay.ico"
+    },
+    {
+      "id": "pornbits",
+      "name": "Pornbits",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://pornbits.net/",
+        "https://pornbits.org/"
+      ],
+      "is_dead": true,
+      "icon": "pornbits.ico"
+    },
+    {
+      "id": "pornolab",
+      "name": "PornoLab",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://pornolab.net/"
+      ],
+      "is_dead": false,
+      "icon": "pornolab.ico"
+    },
+    {
+      "id": "portugas",
+      "name": "Portugas",
+      "schema": "Unit3D",
+      "urls": [
+        "https://portugas.org/"
+      ],
+      "is_dead": false,
+      "icon": "portugas.ico"
+    },
+    {
+      "id": "privatehd",
+      "name": "PrivateHD",
+      "schema": "AvistazNetwork",
+      "urls": [
+        "https://privatehd.to/"
+      ],
+      "is_dead": false,
+      "icon": "privatehd.png"
+    },
+    {
+      "id": "pt99",
+      "name": "PT99",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.j99.info/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "ptcafe",
+      "name": "咖啡",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptcafe.club/"
+      ],
+      "is_dead": false,
+      "icon": "ptcafe.ico"
+    },
+    {
+      "id": "ptchina",
+      "name": "PTChina",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptchina.org/"
+      ],
+      "is_dead": true
+    },
+    {
+      "id": "ptdream",
+      "name": "PTDream",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.ptdream.net/",
+        "https://plus.ptdream.net/"
+      ],
+      "is_dead": true,
+      "icon": "ptdream.ico"
+    },
+    {
+      "id": "pter",
+      "name": "PTer",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pterclub.net/"
+      ],
+      "is_dead": false,
+      "icon": "pter.ico"
+    },
+    {
+      "id": "ptfans",
+      "name": "PTFans",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptfans.cc/",
+        "https://cusat.win/"
+      ],
+      "is_dead": false,
+      "icon": "ptfans.ico"
+    },
+    {
+      "id": "ptgtk",
+      "name": "PT GTK",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.gtkpw.xyz/",
+        "https://pt.gtk.pw/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "pthome",
+      "name": "PTHome",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pthome.net/"
+      ],
+      "is_dead": false,
+      "icon": "pthome.ico"
+    },
+    {
+      "id": "ptlao",
+      "name": "PTLAO",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptlao.top/"
+      ],
+      "is_dead": false,
+      "icon": "ptlao.ico"
+    },
+    {
+      "id": "ptlgs",
+      "name": "PTLGS",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptlgs.org/"
+      ],
+      "is_dead": false,
+      "icon": "ptlgs.png"
+    },
+    {
+      "id": "ptlsp",
+      "name": "PTLSP",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.ptlsp.com/"
+      ],
+      "is_dead": true,
+      "icon": "ptlsp.ico"
+    },
+    {
+      "id": "ptmsg",
+      "name": "PTMSG",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.msg.vg/"
+      ],
+      "is_dead": true,
+      "icon": "ptmsg.ico"
+    },
+    {
+      "id": "ptneko",
+      "name": "超科学PT喵",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptneko.com/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "ptsbao",
+      "name": "PTSBao",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptsbao.club/"
+      ],
+      "is_dead": false,
+      "icon": "ptsbao.png"
+    },
+    {
+      "id": "ptskit",
+      "name": "PTSkit",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.ptskit.org/"
+      ],
+      "is_dead": false,
+      "icon": "ptskit.png"
+    },
+    {
+      "id": "pttime",
+      "name": "PTTime",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.pttime.org/"
+      ],
+      "is_dead": false,
+      "icon": "pttime.ico"
+    },
+    {
+      "id": "ptvicomo",
+      "name": "象岛",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptvicomo.net/"
+      ],
+      "is_dead": true,
+      "icon": "ptvicomo.png"
+    },
+    {
+      "id": "ptzone",
+      "name": "PTzone",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ptzone.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "pussytorrents",
+      "name": "Pussytorrents",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://pussytorrents.org/"
+      ],
+      "is_dead": false,
+      "icon": "pussytorrents.ico"
+    },
+    {
+      "id": "qingwa",
+      "name": "QingWa",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.qingwapt.com/",
+        "https://www.qingwapt.org/",
+        "https://www.qingwa.pro/",
+        "https://qingwapt.com/"
+      ],
+      "is_dead": false,
+      "icon": "qingwa.svg"
+    },
+    {
+      "id": "qingyingpt",
+      "name": "清影PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://hitpt.org/"
+      ],
+      "is_dead": true,
+      "icon": "qingyingpt.png"
+    },
+    {
+      "id": "racing4everyone",
+      "name": "Racing4Everyone",
+      "schema": "Unit3D",
+      "urls": [
+        "https://racing4everyone.eu/"
+      ],
+      "is_dead": false,
+      "icon": "racing4everyone.png"
+    },
+    {
+      "id": "railgunpt",
+      "name": "RailgunPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://bilibili.download/"
+      ],
+      "is_dead": false,
+      "icon": "railgunpt.ico"
+    },
+    {
+      "id": "raingfh",
+      "name": "雨",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://raingfh.top/"
+      ],
+      "is_dead": true,
+      "icon": "raingfh.ico"
+    },
+    {
+      "id": "rastastugan",
+      "name": "Rastastugan",
+      "schema": "Unit3D",
+      "urls": [
+        "https://rastastugan.org/"
+      ],
+      "is_dead": false,
+      "icon": "rastastugan.png"
+    },
+    {
+      "id": "redacted",
+      "name": "Redacted",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://redacted.sh/"
+      ],
+      "is_dead": false,
+      "icon": "redacted.ico"
+    },
+    {
+      "id": "redleaves",
+      "name": "红叶",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://leaves.red/"
+      ],
+      "is_dead": true,
+      "icon": "redleaves.png"
+    },
+    {
+      "id": "reelflix",
+      "name": "ReelFliX",
+      "schema": "Unit3D",
+      "urls": [
+        "https://reelflix.cc/",
+        "https://reelflix.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "reelflix.ico"
+    },
+    {
+      "id": "retroflix",
+      "name": "RetroFlix",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://retroflix.net/",
+        "https://retroflix.club/"
+      ],
+      "is_dead": false,
+      "icon": "retroflix.ico"
+    },
+    {
+      "id": "retrotoon",
+      "name": "RetroToon World",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://retrotoon.world/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "rockethd",
+      "name": "RocketHD",
+      "schema": "Unit3D",
+      "urls": [
+        "https://rocket-hd.cc/"
+      ],
+      "is_dead": false,
+      "icon": "rockethd.ico"
+    },
+    {
+      "id": "rousi",
+      "name": "Rousi",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://rousi.zip/"
+      ],
+      "is_dead": true,
+      "icon": "rousi.ico"
+    },
+    {
+      "id": "rousipro",
+      "name": "Rousi Pro",
+      "schema": "Rousi",
+      "urls": [
+        "https://rousi.pro/"
+      ],
+      "is_dead": false,
+      "icon": "rousipro.ico"
+    },
+    {
+      "id": "rs",
+      "name": "睿思",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://resource.xidian.edu.cn/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "rutracker",
+      "name": "RuTracker.org",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://rutracker.org/",
+        "https://rutracker.net/"
+      ],
+      "is_dead": false,
+      "icon": "rutracker.ico"
+    },
+    {
+      "id": "sanpro",
+      "name": "伞",
+      "schema": "Gazelle",
+      "urls": [
+        "https://sanpro.pw/"
+      ],
+      "is_dead": true,
+      "icon": "sanpro.png"
+    },
+    {
+      "id": "sbpt",
+      "name": "SBPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://sbpt.link/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "sdbits",
+      "name": "SDBits",
+      "schema": "custom",
+      "urls": [
+        "https://sdbits.org/"
+      ],
+      "is_dead": true,
+      "icon": "sdbits.png"
+    },
+    {
+      "id": "secretcinema",
+      "name": "Secret Cinema",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://secret-cinema.pw/"
+      ],
+      "is_dead": false,
+      "icon": "secretcinema.ico"
+    },
+    {
+      "id": "seedpool",
+      "name": "seedpool",
+      "schema": "Unit3D",
+      "urls": [
+        "https://seedpool.org/"
+      ],
+      "is_dead": false,
+      "icon": "seedpool.ico"
+    },
+    {
+      "id": "sewerpt",
+      "name": "下水道",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://sewerpt.com/"
+      ],
+      "is_dead": false,
+      "icon": "sewerpt.png"
+    },
+    {
+      "id": "shareisland",
+      "name": "ShareIsland",
+      "schema": "Unit3D",
+      "urls": [
+        "https://shareisland.org/"
+      ],
+      "is_dead": false,
+      "icon": "shareisland.png"
+    },
+    {
+      "id": "sharkpt",
+      "name": "鲨鱼PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://sharkpt.net/"
+      ],
+      "is_dead": true,
+      "icon": "sharkpt.ico"
+    },
+    {
+      "id": "simurg",
+      "name": "Simurg",
+      "schema": "Gazelle",
+      "urls": [
+        "https://simurg.world/"
+      ],
+      "is_dead": false,
+      "icon": "simurg.png"
+    },
+    {
+      "id": "siqi",
+      "name": "思齐",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://si-qi.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "siqi.png"
+    },
+    {
+      "id": "sjtu",
+      "name": "葡萄",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.sjtu.edu.cn/"
+      ],
+      "is_dead": false,
+      "icon": "sjtu.png"
+    },
+    {
+      "id": "skipthecommercials",
+      "name": "SkipTheCommercials",
+      "schema": "Unit3D",
+      "urls": [
+        "https://skipthecommercials.xyz/"
+      ],
+      "is_dead": false,
+      "icon": "skipthecommercials.ico"
+    },
+    {
+      "id": "skyeysnow",
+      "name": "SkyeySnow",
+      "schema": "Discuz",
+      "urls": [
+        "https://www.skyey2.com/",
+        "https://skyeysnow.com/"
+      ],
+      "is_dead": false,
+      "icon": "skyeysnow.ico"
+    },
+    {
+      "id": "snakepop",
+      "name": "Snakepop",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://snakepop.art/"
+      ],
+      "is_dead": true
+    },
+    {
+      "id": "soulvoice",
+      "name": "SoulVoice",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.soulvoice.club/"
+      ],
+      "is_dead": false,
+      "icon": "soulvoice.ico"
+    },
+    {
+      "id": "speedapp",
+      "name": "SpeedApp",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://speedapp.io/"
+      ],
+      "is_dead": false,
+      "icon": "speedapp.ico"
+    },
+    {
+      "id": "sportscult",
+      "name": "SportsCult",
+      "schema": "XBTIT",
+      "urls": [
+        "https://sportscult.org/"
+      ],
+      "is_dead": false,
+      "icon": "sportscult.ico"
+    },
+    {
+      "id": "springsunday",
+      "name": "SpringSunday",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://springsunday.net/"
+      ],
+      "is_dead": false,
+      "icon": "springsunday.png"
+    },
+    {
+      "id": "starspace",
+      "name": "星空",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://star-space.net/"
+      ],
+      "is_dead": false,
+      "icon": "starspace.png"
+    },
+    {
+      "id": "stspt",
+      "name": "STSPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.sts.tw/"
+      ],
+      "is_dead": true,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "sugoimusic",
+      "name": "SugoiMusic",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://sugoimusic.me/"
+      ],
+      "is_dead": true,
+      "icon": "sugoimusic.png"
+    },
+    {
+      "id": "sunnypt",
+      "name": "Sunny",
+      "schema": "SunnyPT",
+      "urls": [
+        "https://sunnypt.top/"
+      ],
+      "is_dead": false,
+      "icon": "sunnypt.ico"
+    },
+    {
+      "id": "superbits",
+      "name": "Superbits",
+      "schema": "Rartracker",
+      "urls": [
+        "https://superbits.org/"
+      ],
+      "is_dead": false,
+      "icon": "superbits.ico"
+    },
+    {
+      "id": "tangpt",
+      "name": "躺平",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.tangpt.top/"
+      ],
+      "is_dead": false,
+      "icon": "tangpt.png"
+    },
+    {
+      "id": "tccf",
+      "name": "TorrentCCF",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://et8.org/"
+      ],
+      "is_dead": false,
+      "icon": "tccf.png"
+    },
+    {
+      "id": "teamhd",
+      "name": "TeamHD",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://teamhd.org/"
+      ],
+      "is_dead": false,
+      "icon": "teamhd.ico"
+    },
+    {
+      "id": "telly",
+      "name": "Telly",
+      "schema": "Unit3D",
+      "urls": [
+        "https://telly.wtf/"
+      ],
+      "is_dead": true,
+      "icon": "telly.ico"
+    },
+    {
+      "id": "tey",
+      "name": "tey",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.tey.cc/"
+      ],
+      "is_dead": false,
+      "icon": "tey.ico"
+    },
+    {
+      "id": "thegeeks",
+      "name": "TheGeeks",
+      "schema": "TCG",
+      "urls": [
+        "https://thegeeks.click/"
+      ],
+      "is_dead": false,
+      "icon": "thegeeks.ico"
+    },
+    {
+      "id": "thevault",
+      "name": "TheVault",
+      "schema": "TCG",
+      "urls": [
+        "https://thevault.click/"
+      ],
+      "is_dead": false,
+      "icon": "thevault.ico"
+    },
+    {
+      "id": "tjupt",
+      "name": "北洋园PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://tjupt.org/",
+        "https://www.tjupt.org/"
+      ],
+      "is_dead": false,
+      "icon": "tjupt.png"
+    },
+    {
+      "id": "tlfbits",
+      "name": "TLFBits",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.eastgame.org/"
+      ],
+      "is_dead": false,
+      "icon": "tlfbits.ico"
+    },
+    {
+      "id": "tlzdigital",
+      "name": "TLZ Digital",
+      "schema": "Unit3D",
+      "urls": [
+        "https://tlzdigital.com/"
+      ],
+      "is_dead": false,
+      "icon": "tlzdigital.png"
+    },
+    {
+      "id": "tmpt",
+      "name": "唐门",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://tmpt.top/"
+      ],
+      "is_dead": true,
+      "icon": "tmpt.png"
+    },
+    {
+      "id": "tokyopt",
+      "name": "Tokyo",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://www.tokyo-manga.top/"
+      ],
+      "is_dead": false,
+      "icon": "tokyopt.ico"
+    },
+    {
+      "id": "torrentday",
+      "name": "TorrentsTD",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://tday.love/",
+        "https://torrentday.cool/",
+        "https://secure.torrentday.com/",
+        "https://classic.torrentday.com/",
+        "https://www.torrentday.com/",
+        "https://www.torrentday.me/",
+        "https://torrentday.it/",
+        "https://td.findnemo.net/",
+        "https://td.getcrazy.me/",
+        "https://td.workisboring.net/",
+        "https://tday.findnemo.net/",
+        "https://tday.getcrazy.me/",
+        "https://tday.workisboring.net/"
+      ],
+      "is_dead": false,
+      "icon": "torrentday.ico"
+    },
+    {
+      "id": "torrenthub",
+      "name": "TorrentHub",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://torrenthub.club/"
+      ],
+      "is_dead": true,
+      "icon": "torrenthub.ico"
+    },
+    {
+      "id": "torrenting",
+      "name": "Torrenting",
+      "schema": "custom",
+      "urls": [
+        "https://torrenting.com/",
+        "https://torrenting.me/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "torrentleech",
+      "name": "TorrentLeech",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://www.torrentleech.org/",
+        "https://www.torrentleech.cc/",
+        "https://www.torrentleech.me/",
+        "https://www.tleechreload.org/",
+        "https://www.tlgetin.cc/"
+      ],
+      "is_dead": false,
+      "icon": "torrentleech.ico"
+    },
+    {
+      "id": "torrentseeds",
+      "name": "TorrentSeeds",
+      "schema": "Unit3D",
+      "urls": [
+        "https://www.torrentseeds.org/"
+      ],
+      "is_dead": true,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "tosky",
+      "name": "ToSky",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://t.tosky.club/"
+      ],
+      "is_dead": true,
+      "icon": "tosky.png"
+    },
+    {
+      "id": "totheglory",
+      "name": "ToTheGlory",
+      "schema": "TBSource",
+      "urls": [
+        "https://totheglory.im/"
+      ],
+      "is_dead": false,
+      "icon": "totheglory.ico"
+    },
+    {
+      "id": "trancetraffic",
+      "name": "TranceTraffic",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://www.trancetraffic.com/"
+      ],
+      "is_dead": false,
+      "icon": "trancetraffic.ico"
+    },
+    {
+      "id": "tu88",
+      "name": "TU88",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.tu88.men/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "turkseed",
+      "name": "TURKSEED",
+      "schema": "Unit3D",
+      "urls": [
+        "https://turkseed.com/"
+      ],
+      "is_dead": false,
+      "icon": "_default_unit3d.ico"
+    },
+    {
+      "id": "u2",
+      "name": "U2",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://u2.dmhy.org/"
+      ],
+      "is_dead": false,
+      "icon": "dmhy.ico"
+    },
+    {
+      "id": "ubits",
+      "name": "UBits",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ubits.club/"
+      ],
+      "is_dead": false,
+      "icon": "ubits.ico"
+    },
+    {
+      "id": "uhdbits",
+      "name": "UHDBits",
+      "schema": "GazelleJSONAPI",
+      "urls": [
+        "https://uhdbits.org/"
+      ],
+      "is_dead": true
+    },
+    {
+      "id": "ultrahd",
+      "name": "UltraHD",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://ultrahd.net/"
+      ],
+      "is_dead": false,
+      "icon": "ultrahd.png"
+    },
+    {
+      "id": "uploadcx",
+      "name": "ULCX",
+      "schema": "Unit3D",
+      "urls": [
+        "https://upload.cx/"
+      ],
+      "is_dead": false,
+      "icon": "uploadcx.ico"
+    },
+    {
+      "id": "vclib",
+      "name": "VC-Lib",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.vclib.online/"
+      ],
+      "is_dead": false,
+      "icon": "vclib.png"
+    },
+    {
+      "id": "whupt",
+      "name": "珞樱-WHUPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://whu.pt/"
+      ],
+      "is_dead": true,
+      "icon": "whupt.ico"
+    },
+    {
+      "id": "wihd",
+      "name": "WiHD",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://world-in-hd.net/"
+      ],
+      "is_dead": false,
+      "icon": "wihd.png"
+    },
+    {
+      "id": "wintersakura",
+      "name": "WinterSakura",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://wintersakura.net/"
+      ],
+      "is_dead": false,
+      "icon": "wintersakura.ico"
+    },
+    {
+      "id": "wukongwendao",
+      "name": "悟空问道",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://wukongwendao.top/",
+        "https://wukongwendao.top/"
+      ],
+      "is_dead": true,
+      "icon": "wukongwendao.png"
+    },
+    {
+      "id": "xauat6",
+      "name": "溪涧草堂PT",
+      "schema": "NexusPHP",
+      "urls": [
+        "http://pt.xauat6.edu.cn/"
+      ],
+      "is_dead": true,
+      "icon": "xauat6.png"
+    },
+    {
+      "id": "xdypt",
+      "name": "修道院",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://xdypt.vip/",
+        "https://pt.1ctrl.cn/"
+      ],
+      "is_dead": false,
+      "icon": "xdypt.png"
+    },
+    {
+      "id": "xingtan",
+      "name": "杏坛",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://xingtan.one/"
+      ],
+      "is_dead": false,
+      "icon": "xingtan.ico"
+    },
+    {
+      "id": "xingwan",
+      "name": "星湾",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://xingwan.cc/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "xingyunge",
+      "name": "星陨阁",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.xingyungept.org/",
+        "https://pt.xingyungept.cn/"
+      ],
+      "is_dead": false,
+      "icon": "xingyunge.png"
+    },
+    {
+      "id": "xite",
+      "name": "x·ite.me",
+      "schema": "custom",
+      "urls": [
+        "https://x-ite.me/"
+      ],
+      "is_dead": true
+    },
+    {
+      "id": "xtr",
+      "name": "XTR",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://extremlymtorrents.ws/"
+      ],
+      "is_dead": false,
+      "icon": "xtr.ico"
+    },
+    {
+      "id": "ydypt",
+      "name": "伊甸园",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.hdbd.us/"
+      ],
+      "is_dead": true,
+      "icon": "ydypt.jpg"
+    },
+    {
+      "id": "yemapt",
+      "name": "YemaPT",
+      "schema": "YemaPT",
+      "urls": [
+        "https://www.yemapt.org/"
+      ],
+      "is_dead": false,
+      "icon": "yemapt.png"
+    },
+    {
+      "id": "yingk",
+      "name": "影客",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://yingk.com/"
+      ],
+      "is_dead": true,
+      "icon": "yingk.ico"
+    },
+    {
+      "id": "yinguskg",
+      "name": "樱花",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://pt.ying.us.kg/"
+      ],
+      "is_dead": false,
+      "icon": "_default_nexusphp.png"
+    },
+    {
+      "id": "yuscene",
+      "name": "YUSCENE",
+      "schema": "Unit3D",
+      "urls": [
+        "https://yu-scene.net/"
+      ],
+      "is_dead": false
+    },
+    {
+      "id": "yzyy",
+      "name": "YzYY",
+      "schema": "AbstractPrivateSite",
+      "urls": [
+        "https://www.yzyy.org/",
+        "https://bbs.yzyy.asia/"
+      ],
+      "is_dead": false,
+      "icon": "yzyy.ico"
+    },
+    {
+      "id": "zhixing",
+      "name": "知行PT",
+      "schema": "CGBTSource",
+      "urls": [
+        "http://pt.zhixing.bjtu.edu.cn/"
+      ],
+      "is_dead": false,
+      "icon": "zhixing.ico"
+    },
+    {
+      "id": "zhuque",
+      "name": "朱雀",
+      "schema": "TNode",
+      "urls": [
+        "https://zhuque.in/"
+      ],
+      "is_dead": false,
+      "icon": "zhuque.png"
+    },
+    {
+      "id": "zmpt",
+      "name": "织梦",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://zmpt.cc/"
+      ],
+      "is_dead": false,
+      "icon": "zmpt.png"
+    },
+    {
+      "id": "zrpt",
+      "name": "ZRPT",
+      "schema": "NexusPHP",
+      "urls": [
+        "https://naturept.top/"
+      ],
+      "is_dead": false,
+      "icon": "zrpt.png"
+    }
+  ]
+}

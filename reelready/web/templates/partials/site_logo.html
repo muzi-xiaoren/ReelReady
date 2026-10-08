@@ -1,0 +1,6 @@
+{% macro site_logo(url, name) -%}
+<span class="site-logo" aria-hidden="true">
+  {% if url %}<img src="{{ url }}" alt="" loading="lazy" data-site-logo><span class="site-logo-fallback" hidden>{{ name[:1] | upper }}</span>
+  {% else %}<span class="site-logo-fallback">{{ name[:1] | upper }}</span>{% endif %}
+</span>
+{%- endmacro %}

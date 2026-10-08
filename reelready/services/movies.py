@@ -1,6 +1,7 @@
 """Creating, linking and merging movie records across Douban / TMDB / IMDb ids."""
 
 import logging
+import calendar
 from datetime import date
 
 import httpx
@@ -32,7 +33,27 @@ class AddMovieError(Exception):
 
 
 def min_year(settings: AppSettings) -> int:
-    return date.today().year - settings.collect.max_age_years
+    return collection_cutoff(settings).year
+
+
+def collection_cutoff(settings: AppSettings, today: date | None = None) -> date:
+    today = today or date.today()
+    months = settings.collect.max_age_years * 12 + settings.collect.max_age_months
+    year, month = divmod(today.year * 12 + today.month - 1 - months, 12)
+    month += 1
+    return date(year, month, min(today.day, calendar.monthrange(year, month)[1]))
+
+
+def within_collection_window(settings: AppSettings, year: int | None, release_date: str | None = None) -> bool:
+    cutoff = collection_cutoff(settings)
+    if release_date:
+        try:
+            released = date.fromisoformat(release_date[:10])
+            return cutoff <= released <= date.today()
+        except ValueError:
+            pass
+    # Some collection feeds expose only the release year; avoid inventing a month.
+    return year is not None and cutoff.year <= year <= date.today().year
 
 
 def find_existing(
@@ -108,6 +129,7 @@ def apply_douban(movie: Movie, item: DoubanMovie) -> None:
     movie.year = movie.year or item.year
     movie.poster_url = item.cover or movie.poster_url
     movie.overview = item.intro or movie.overview
+    merge_details(movie, item.details, item.release_date)
 
 
 def apply_tmdb(movie: Movie, item: TMDBMovie) -> None:
@@ -120,6 +142,19 @@ def apply_tmdb(movie: Movie, item: TMDBMovie) -> None:
     movie.year = movie.year or item.year
     movie.poster_url = movie.poster_url or item.poster
     movie.overview = movie.overview or item.overview
+    merge_details(movie, item.details, item.release_date)
+
+
+def merge_details(movie: Movie, details: dict, release_date: str | None = None) -> None:
+    values = dict(movie.details or {})
+    details = dict(details)
+    # Keep richer TMDB roles when Douban's actor list only provides names.
+    if any(p.get('role') for p in values.get('cast') or []) and not any(p.get('role') for p in details.get('cast') or []):
+        details.pop('cast', None)
+    values.update({key: value for key, value in details.items() if value})
+    if release_date:
+        values['release_date'] = release_date
+    movie.details = values
 
 
 def link_ids(session: Session, movie: Movie, tmdb: TMDBClient | None, douban: DoubanClient) -> Movie:
@@ -146,6 +181,11 @@ def link_ids(session: Session, movie: Movie, tmdb: TMDBClient | None, douban: Do
                 movie.douban_votes = movie.douban_votes or found.votes
         except DoubanError as exc:
             log.info("Douban lookup failed for %s: %s", movie.title, exc)
+    if movie.douban_id and not movie.overview:
+        try:
+            apply_douban(movie, douban.detail(movie.douban_id))
+        except DoubanError:
+            log.info("Douban details unavailable for movie %s", movie.id)
     return movie
 
 

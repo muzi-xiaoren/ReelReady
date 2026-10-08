@@ -2,13 +2,14 @@
 
 import logging
 import time
+from datetime import date
 from dataclasses import dataclass
 
 from sqlalchemy import select
 
 from ..db import session_scope
 from ..downloader import DownloaderError, QBittorrent
-from ..models import Movie, Site, now
+from ..models import Movie, MovieStatus, Site, now
 from ..settings import AppSettings
 from ..sites import BaseSite, LoginExpired, MovieQuery, SiteError, build_site, snapshot
 from ..torrent_rules import GB, Evaluated, TorrentInfo, matches_movie, pick_best
@@ -27,6 +28,37 @@ class _Target:
     id: int
     title: str
     query: MovieQuery
+    release_wait: str = ""
+
+
+def release_wait_reason(movie: Movie) -> str:
+    if movie.streaming:
+        return ""
+    if movie.digital_date:
+        try:
+            if date.fromisoformat(movie.digital_date) <= date.today():
+                return ""
+            return f"等待上线确认：数字版预计 {movie.digital_date}，暂无可看平台"
+        except ValueError:
+            pass
+    return "等待上线确认：暂无有效数字版日期或可看平台"
+
+
+def rank_for_movie(hits: list[TorrentInfo], rules, query: MovieQuery, release_wait: str):
+    _, ranked = pick_best(hits, rules)
+    for item in ranked:
+        if not matches_movie(item.torrent, imdb_id=query.imdb_id, titles=query.titles, year=query.year):
+            item.ok = False
+            item.reason = "影片不匹配：标题、年份或内容类型与目标电影不符"
+        elif item.ok and not item.parsed.source:
+            item.ok = False
+            item.reason = "片源类型不明：未识别到 WEB-DL、WEBRip、BluRay、HDTV 或 DVD"
+        elif item.ok and release_wait:
+            item.ok = False
+            item.reason = release_wait
+    accepted = [item for item in ranked if item.ok]
+    rejected = [item for item in ranked if not item.ok]
+    return (accepted[0] if accepted else None), accepted + rejected
 
 
 def mark_site_invalid(site_id: int, message: str) -> None:
@@ -60,7 +92,7 @@ def _mark_site_ok(site_id: int) -> None:
 
 def open_sites(settings: AppSettings, site_ids: list[int] | None = None) -> list[BaseSite]:
     with session_scope() as session:
-        query = select(Site).where(Site.enabled.is_(True), Site.status != "invalid")
+        query = select(Site).where(Site.enabled.is_(True), Site.status.notin_(("invalid", "testing")))
         if site_ids:
             query = select(Site).where(Site.id.in_(site_ids))
         configs = [snapshot(s, settings.network.user_agent) for s in session.scalars(query)]
@@ -80,7 +112,7 @@ def _targets(movie_ids: list[int] | None) -> list[_Target]:
     with session_scope() as session:
         movies = session.scalars(select(Movie).where(Movie.id.in_(ids)).order_by(Movie.id)) if ids else []
         return [
-            _Target(m.id, m.title, MovieQuery(m.imdb_id, m.title, m.original_title, m.year)) for m in movies
+            _Target(m.id, m.title, MovieQuery(m.imdb_id, m.title, m.original_title, m.year), release_wait_reason(m)) for m in movies
         ]
 
 
@@ -88,6 +120,12 @@ def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> st
     targets = _targets(movie_ids)
     if not targets:
         return "没有需要搜索的影片"
+    skipped = []
+    if not settings.pt.early_search:
+        skipped = [target for target in targets if target.release_wait]
+        targets = [target for target in targets if not target.release_wait]
+    if not targets:
+        return f"提前搜索已关闭，{len(skipped)} 部影片等待上线确认，未访问 PT 站点"
     sites = open_sites(settings)
     if not sites:
         return "没有可用的站点"
@@ -113,11 +151,8 @@ def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> st
                 except SiteError as exc:
                     errors.append(f"{site.name}: {exc}")
                     continue
-                hits.extend(
-                    t for t in found
-                    if matches_movie(t, imdb_id=target.query.imdb_id, titles=target.query.titles, year=target.query.year)
-                )
-            best, ranked = pick_best(hits, settings.rules)
+                hits.extend(found)
+            best, ranked = rank_for_movie(hits, settings.rules, target.query, target.release_wait)
             _save_scan(target.id, ranked, errors)
             if best is not None:
                 site = next((s for s in sites if s.config.id == best.torrent.site_id), None)
@@ -128,7 +163,23 @@ def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> st
     finally:
         for site in sites:
             site.close()
-    return f"搜索 {len(targets)} 部，开始下载 {downloaded} 部"
+    summary = f"搜索 {len(targets)} 部，开始下载 {downloaded} 部"
+    return summary + (f"，{len(skipped)} 部等待上线确认（提前搜索已关闭）" if skipped else "")
+
+
+def revalidate_cached_candidates(settings: AppSettings) -> int:
+    """Re-evaluate stored results locally, without searching sites or downloading."""
+    updated = 0
+    with session_scope() as session:
+        for movie in session.scalars(select(Movie).where(Movie.last_pt_candidates != [], Movie.status != MovieStatus.COMPLETED)):
+            fields = TorrentInfo.__dataclass_fields__
+            hits = [TorrentInfo(**{key: value for key, value in item.items() if key in fields}) for item in movie.last_pt_candidates if (item.get('title') or '').strip()]
+            query = MovieQuery(movie.imdb_id, movie.title, movie.original_title, movie.year)
+            _, ranked = rank_for_movie(hits, settings.rules, query, release_wait_reason(movie))
+            movie.last_pt_candidates = [item.to_dict() for item in ranked]
+            movie.last_pt_summary = f"找到 {len(ranked)} 个种子，{sum(item.ok for item in ranked)} 个可自动下载" if ranked else "暂无有效资源（已移除标题为空的解析记录）"
+            updated += 1
+    return updated
 
 
 def _save_scan(movie_id: int, ranked: list[Evaluated], errors: list[str]) -> None:

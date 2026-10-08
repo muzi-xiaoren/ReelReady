@@ -4,12 +4,14 @@
 {% block content %}
 <div style="margin-bottom:18px"><a class="muted" href="/movies?tab={{ movie.status }}">← 返回{{ status_label }}</a></div>
 
+<div id="movie-information" {% if metadata_pending %}hx-get="/movies/{{ movie.id }}" hx-select="#movie-information" hx-target="this" hx-swap="outerHTML" hx-trigger="every 2s" hx-disinherit="hx-select hx-target"{% endif %}>
+{% set info = movie.details or {} %}
 <section class="detail-hero">
   <div class="detail-poster">
     <img src="/posters/{{ movie.id }}" alt="" referrerpolicy="no-referrer"
          onerror="this.onerror=null;this.src='/static/poster-placeholder.svg'">
   </div>
-  <div>
+  <div class="detail-main">
     <div class="detail-title">{{ movie.title }}</div>
     {% if movie.original_title and movie.original_title != movie.title %}
       <div class="detail-original">{{ movie.original_title }}</div>
@@ -30,7 +32,15 @@
       {% endif %}
     </div>
 
-    {% if movie.overview %}<div class="overview">{{ movie.overview }}</div>{% endif %}
+    {% if info.tagline %}<p class="detail-tagline">{{ info.tagline }}</p>{% endif %}
+    <dl class="movie-facts">
+      <dt>上映日期</dt><dd>{{ info.pubdates | join(' / ') if info.pubdates else info.release_date or '暂无准确日期' }}</dd>
+      <dt>类型</dt><dd>{{ info.genres | join(' / ') if info.genres else '暂无' }}</dd>
+      <dt>片长</dt><dd>{% if info.durations %}{{ info.durations | join(' / ') }}{% elif info.runtime %}{{ info.runtime }} 分钟{% else %}暂无{% endif %}</dd>
+      <dt>制片地区</dt><dd>{{ info.countries | join(' / ') if info.countries else '暂无' }}</dd>
+      <dt>语言</dt><dd>{{ info.languages | join(' / ') if info.languages else '暂无' }}</dd>
+      <dt>导演</dt><dd>{{ info.directors | map(attribute='name') | join(' / ') if info.directors else '暂无' }}</dd>
+    </dl>
 
     <div class="links">
       {% if movie.douban_url %}<a class="btn btn-sm" href="{{ movie.douban_url }}" target="_blank" rel="noreferrer">豆瓣 {{ icon("external") }}</a>{% endif %}
@@ -43,7 +53,7 @@
         <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/approve" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("check") }}加入监测</button>
         <button class="btn" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}不要</button>
       {% elif movie.status == "monitoring" %}
-        <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/search" hx-swap="none">{{ icon("search") }}立即搜索 PT</button>
+        <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/search" hx-swap="none" {{ 'disabled' if not show_pt_results }} title="{{ '提前搜索已关闭，等待上线确认后可搜索' if not show_pt_results else '搜索 PT 资源' }}">{{ icon("search") }}{{ '立即搜索 PT' if show_pt_results else '等待上线确认' }}</button>
         <button class="btn" hx-post="/movies/{{ movie.id }}/check" hx-swap="none">{{ icon("refresh") }}立即检测上线</button>
         <button class="btn btn-danger" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}移入黑名单</button>
       {% elif movie.status == "completed" %}
@@ -56,7 +66,48 @@
               hx-confirm="彻底删除《{{ movie.title }}》？删除后它可能被重新收集，不想再看到请用黑名单。">{{ icon("trash") }}删除</button>
     </div>
   </div>
+  <aside class="detail-side">
+    <div class="hero-status-card">
+      <div class="hero-status-head"><span class="faint small">上线与下载</span><span class="pill stage-{{ movie.stage }}">{{ movie.stage_label }}</span></div>
+      <h2>{{ '已提交下载' if movie.downloaded else '已确认上线' if release_confirmed else '持续监测中' }}</h2>
+      <dl class="movie-facts">
+        <dt>数字版</dt><dd>{{ movie.digital_date or '日期待确认' }}</dd>
+        <dt>可看平台</dt><dd>{{ (movie.streaming or []) | length }} 个</dd>
+        <dt>上次检测</dt><dd>{{ movie.last_checked_at | when }}</dd>
+      </dl>
+      {% if show_pt_results %}
+      {% set eligible = movie.last_pt_candidates | selectattr('ok') | list %}
+      <div class="hero-resource"><span class="faint small">{{ '下载资源' if movie.downloaded else '首选资源 · 做种人数优先' }}</span>
+        {% if movie.downloaded %}<p>{{ movie.downloaded.title }}</p><span class="tag">{{ movie.downloaded.site }}</span>
+        {% elif eligible %}<p>{{ eligible[0].title }}</p><span class="tag">{{ eligible[0].site_name }}</span><span class="tag hl">{{ eligible[0].seeders }} 人做种</span><span class="tag">{{ eligible[0].size_bytes | filesize }}</span>
+        {% else %}<p class="muted">等待符合条件的资源</p>{% endif %}
+      </div>
+      {% else %}<p class="help">上线确认后再搜索资源，避免提前下载错误片源。</p>{% endif %}
+      {% set download_events = events | selectattr('kind', 'in', ['download_failed', 'downloaded']) | list %}
+      {% if download_events and download_events[0].kind == 'download_failed' and not movie.downloaded %}<div class="hero-download-error"><strong>上次提交失败</strong><p>{{ download_events[0].message.split('\n')[-1] }}</p><a href="/settings#qbittorrent">检查下载器设置 →</a></div>{% endif %}
+    </div>
+    {% if movie.overview %}<div class="hero-overview"><span class="faint small">故事梗概</span><p>{{ movie.overview }}</p><a class="small" href="#movie-story">阅读完整简介 ↓</a></div>{% endif %}
+  </aside>
 </section>
+
+<section class="panel movie-metadata-panel">
+  <div class="panel-head"><h2>电影资料</h2><button class="btn btn-sm" hx-post="/movies/{{ movie.id }}/metadata" hx-swap="none" hx-disabled-elt="this" {{ 'disabled' if metadata_pending }}>{{ '正在补全…' if metadata_pending else '刷新资料' }}</button></div>
+  <p class="help">{% if metadata_pending %}正在后台获取简介、演职员和上映日期，完成后自动显示。{% else %}{{ info.message or '影片资料来自豆瓣与 TMDB，未提供的字段显示暂无。' }}{% if movie.metadata_checked_at %} · {{ movie.metadata_checked_at | when }}{% endif %}{% endif %}</p>
+  <h3 id="movie-story">剧情简介</h3><div class="movie-synopsis">{{ movie.overview or '暂无简介，正在尝试补充。' }}</div>
+  {% if info.writers or info.aliases or info.companies or info.budget or info.revenue %}<dl class="movie-facts extra-facts">
+    {% if info.writers %}<dt>编剧</dt><dd>{{ info.writers | map(attribute='name') | unique | join(' / ') }}</dd>{% endif %}
+    {% if info.aliases %}<dt>又名</dt><dd>{{ info.aliases | join(' / ') }}</dd>{% endif %}
+    {% if info.companies %}<dt>制作公司</dt><dd>{{ info.companies | join(' / ') }}</dd>{% endif %}
+    {% if info.budget %}<dt>制作预算</dt><dd>{{ '{:,}'.format(info.budget) }} 美元</dd>{% endif %}
+    {% if info.revenue %}<dt>全球票房</dt><dd>{{ '{:,}'.format(info.revenue) }} 美元</dd>{% endif %}
+  </dl>{% endif %}
+  <h3>演员表 <span class="heading-count">{{ info.cast | length if info.cast else 0 }}</span></h3>
+  {% if info.cast %}<div class="movie-cast-grid">{% for person in info.cast[:12] %}<div class="movie-person">{% if person.avatar %}<img src="{{ person.avatar }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true">{% endif %}<div><strong>{{ person.name }}</strong><span>{{ person.role or '角色暂无' }}</span></div></div>{% endfor %}</div>
+    {% if info.cast | length > 12 %}<details class="site-disclosure"><summary>展开其余 {{ info.cast | length - 12 }} 位演员</summary><div class="movie-cast-grid">{% for person in info.cast[12:] %}<div class="movie-person"><div><strong>{{ person.name }}</strong><span>{{ person.role or '角色暂无' }}</span></div></div>{% endfor %}</div></details>{% endif %}
+  {% else %}<p class="muted">暂无演职员信息；可刷新资料，或配置 TMDB 后补充。</p>{% endif %}
+  {% if info.releases %}<details class="site-disclosure"><summary>各地区院线上映日期 <span class="heading-count">{{ info.releases | length }}</span></summary><div class="movie-release-grid">{% for release in info.releases %}<div><strong>{{ region_names.get(release.region, release.region) }}</strong><span>{{ release.date }}{% if release.certification %} · {{ release.certification }}{% endif %}</span></div>{% endfor %}</div></details>{% endif %}
+</section>
+</div>
 
 <section class="panel" style="margin-top:30px">
   <div class="stepper">
@@ -94,18 +145,18 @@
     </dl>
     {% else %}
     <dl class="kv">
-      <dt>上次搜索</dt><dd>{{ movie.last_pt_scan_at | when }}</dd>
-      <dt>结果</dt><dd>{{ movie.last_pt_summary or "还没有搜索过" }}</dd>
+      <dt>上次搜索</dt><dd>{{ movie.last_pt_scan_at | when if show_pt_results else '—' }}</dd>
+      <dt>结果</dt><dd>{{ movie.last_pt_summary or "还没有搜索过" if show_pt_results else '提前搜索已关闭，等待上线确认后再搜索并显示种子' }}</dd>
     </dl>
     {% endif %}
   </section>
 </div>
 
-{% if movie.last_pt_candidates %}
+{% if show_pt_results and movie.last_pt_candidates %}
 <section class="panel" style="margin-top:18px">
   <div class="panel-head">
     <h2>上次搜索到的种子</h2>
-    <span class="faint small">按选种规则排序，第一个符合要求的会被自动下载</span>
+    <span class="faint small">自动下载需匹配正片、通过片源与规格筛选，并有上线证据。未确认上线时继续等待。</span>
   </div>
   <div class="table-wrap">
     <table>
@@ -121,10 +172,10 @@
           <td class="num">{{ t.site_name }}</td>
           <td class="num">{{ t.size_bytes | filesize }}</td>
           <td class="num">{{ t.seeders }}</td>
-          <td class="num">{% if t.ok %}<span class="pill ok">符合</span>{% else %}<span class="faint small">{{ t.reason }}</span>{% endif %}</td>
+          <td class="num">{% if t.ok %}<span class="pill ok">可自动下载</span>{% else %}<span class="faint small">{{ t.reason }}</span>{% endif %}</td>
           <td class="num">
             <button class="btn btn-sm" hx-post="/movies/{{ movie.id }}/download/{{ loop.index0 }}" hx-swap="none"
-                    hx-confirm="把这个种子推送到 qBittorrent？">{{ icon("download") }}下载</button>
+                    hx-confirm="{{ '该资源未通过自动下载判断：' ~ t.reason ~ '。仍要手动推送到 qBittorrent？' if not t.ok else '把这个种子推送到 qBittorrent？' }}">{{ icon("download") }}下载</button>
           </td>
         </tr>
       {% endfor %}
@@ -135,7 +186,8 @@
 {% endif %}
 
 <section class="panel" style="margin-top:18px">
-  <h2>动态</h2>
+  <h2>影片动态</h2>
+  <p class="help">记录这部影片的收集、监测、上线和下载过程，便于查看进度与排查失败原因。</p>
   {% if events %}
   <ul class="timeline">
     {% for e in events %}

@@ -1,6 +1,8 @@
 """qBittorrent Web API v2 client."""
 
 import httpx
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from .http import make_client
 from .settings import QBittorrentSettings
@@ -16,8 +18,12 @@ class QBittorrent:
             raise DownloaderError("未配置 qBittorrent 地址")
         self.config = config
         self.base = config.url.rstrip("/")
+        address = urlsplit(self.base)
+        if Path('/.dockerenv').exists() and address.hostname in ('localhost', '127.0.0.1', '::1'):
+            host = 'host.docker.internal' + (f':{address.port}' if address.port else '')
+            self.base = urlunsplit(address._replace(netloc=host))
         # qBittorrent rejects requests whose Referer/Origin does not match its own host.
-        self._client = make_client(headers={"Referer": self.base})
+        self._client = make_client(headers={"Referer": self.base}, trust_env=False)
         self._logged_in = False
 
     def close(self) -> None:

@@ -3,6 +3,8 @@
 Set the extension's server address to ``http://<host>:<port>/cookiecloud``.
 """
 
+import gzip
+import json
 import logging
 from typing import Any
 
@@ -22,7 +24,7 @@ router = APIRouter(prefix="/cookiecloud")
 _CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Content-Encoding",
 }
 
 
@@ -34,8 +36,11 @@ async def _payload(request: Request) -> dict[str, Any]:
     content_type = request.headers.get("content-type", "")
     if "application/json" in content_type:
         try:
-            body = await request.json()
-        except ValueError:
+            raw = await request.body()
+            if request.headers.get("content-encoding", "").lower() == "gzip":
+                raw = gzip.decompress(raw)
+            body = json.loads(raw)
+        except (ValueError, OSError, EOFError):
             return {}
         return body if isinstance(body, dict) else {}
     if "form" in content_type:

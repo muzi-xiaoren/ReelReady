@@ -117,11 +117,14 @@ class NexusPHPSite(BaseSite):
 
         torrents: list[TorrentInfo] = []
         for row in rows[1:]:
-            link = row.find("a", href=_DETAIL_ID)
+            # Cover/icon links may precede the actual torrent title link.
+            link = next((anchor for anchor in row.find_all("a", href=_DETAIL_ID) if (anchor.get("title") or anchor.get_text(" ", strip=True)).strip()), None)
             if link is None:
                 continue
             torrent_id = _DETAIL_ID.search(link["href"]).group(1)
             title = (link.get("title") or link.get_text(" ", strip=True)).strip()
+            if not title:
+                continue
             cells = row.find_all("td", recursive=False)
             name_cell = link.find_parent("td")
             subtitle = ""

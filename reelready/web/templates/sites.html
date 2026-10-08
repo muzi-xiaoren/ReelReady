@@ -1,148 +1,109 @@
 {% extends "base.html" %}
 {% from "partials/icons.html" import icon %}
+{% from "partials/site_logo.html" import site_logo %}
 {% block title %}站点 · ReelReady{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1>站点</h1>
-    <div class="subtitle">馒头用 API Key；NexusPHP 站用浏览器 cookie，推荐交给 CookieCloud 自动同步</div>
-  </div>
+<div class="page-head sites-page-head">
+  <div><h1>站点</h1><div class="subtitle">连接你的 PT 站，让好电影自动入库。</div></div>
+  <span class="sites-total" id="sites-total" hx-get="/sites" hx-select="#sites-total" hx-target="this" hx-swap="outerHTML" hx-trigger="sitesChanged from:body">{{ sites | length }} 个已添加站点</span>
 </div>
 
-<div class="grid-2">
-  <section class="panel">
-    <div class="panel-head">
-      <h2>CookieCloud 同步</h2>
-      {% if synced_at %}
-        <span class="pill ok">上次同步 {{ synced_at | when }}</span>
-      {% else %}
-        <span class="pill unknown">尚未收到同步</span>
-      {% endif %}
+<div class="sites-layout">
+  <section class="panel sync-panel">
+    <div class="panel-head"><h2>CookieCloud</h2><span class="pill {{ 'ok' if synced_at else 'unknown' }}">{{ '已连接' if synced_at else '等待同步' }}</span></div>
+    <p class="section-description">浏览器登录一次，站点 Cookie 自动更新。</p>
+    <div class="sync-status">
+      <span class="sync-status-icon">{{ icon("refresh") }}</span>
+      <div><strong>{{ '同步正常' if synced_at else '连接浏览器扩展' }}</strong><span>{% if synced_at %}{{ cookie_domains }} 个域名 · {{ synced_at | when }}{% else %}复制下方配置到 CookieCloud{% endif %}</span></div>
     </div>
-    <ol class="steps-list">
-      <li>在 Edge 里打开 Chrome 应用商店，安装 <b>CookieCloud</b> 扩展（Edge 允许安装来自其他商店的扩展）</li>
-      <li>在扩展里选择 <b>上传到服务器</b>，填入下面三项，同步间隔按需选择</li>
-      <li>「同步域名关键词」建议填你的 PT 站域名，留空则同步全部 cookie</li>
-      <li>点 <b>手动同步</b>，回到这里刷新即可看到识别出的站点</li>
-    </ol>
-    <div class="form-grid" style="grid-template-columns:1fr;margin-top:16px">
-      <div class="field">
-        <label class="title">服务器地址</label>
-        <div class="copy-field"><input type="text" id="cc-server" value="{{ server }}" readonly>
-          <button class="btn btn-icon" type="button" data-copy="#cc-server" title="复制">{{ icon("copy") }}</button></div>
-        <div class="help">扩展和 ReelReady 在同一台电脑上时用 localhost 即可</div>
+    <div class="form-grid sync-fields">
+      <div class="field"><label class="title" for="cc-server">服务器地址</label>
+        <div class="copy-field"><input type="text" id="cc-server" value="{{ server }}" readonly><button class="btn btn-icon" type="button" data-copy="#cc-server" title="复制服务器地址">{{ icon("copy") }}</button></div>
       </div>
-      <div class="field">
-        <label class="title">用户 KEY · UUID</label>
-        <div class="copy-field"><input type="text" id="cc-uuid" value="{{ cookiecloud.uuid }}" readonly>
-          <button class="btn btn-icon" type="button" data-copy="#cc-uuid" title="复制">{{ icon("copy") }}</button></div>
+      <div class="field"><label class="title" for="cc-uuid">用户 KEY · UUID</label>
+        <div class="copy-field"><input type="password" id="cc-uuid" value="{{ cookiecloud.uuid }}" readonly><button class="btn btn-icon" type="button" data-copy="#cc-uuid" title="复制用户 KEY">{{ icon("copy") }}</button></div>
       </div>
-      <div class="field">
-        <label class="title">端对端加密密码</label>
-        <div class="copy-field"><input type="password" id="cc-password" value="{{ cookiecloud.password }}" readonly>
-          <button class="btn btn-icon" type="button" data-reveal="#cc-password" title="显示">{{ icon("eye") }}</button>
-          <button class="btn btn-icon" type="button" data-copy="#cc-password" title="复制">{{ icon("copy") }}</button></div>
+      <div class="field"><label class="title" for="cc-password">端对端加密密码</label>
+        <div class="copy-field"><input type="password" id="cc-password" value="{{ cookiecloud.password }}" readonly><button class="btn btn-icon" type="button" data-reveal="#cc-password" title="显示密码">{{ icon("eye") }}</button><button class="btn btn-icon" type="button" data-copy="#cc-password" title="复制密码">{{ icon("copy") }}</button></div>
       </div>
     </div>
-    <div class="form-actions" style="justify-content:space-between;align-items:center">
-      <span class="faint small">{% if synced_at %}已收到 {{ cookie_domains }} 个域名的 cookie{% else %}等待扩展推送{% endif %}</span>
-      <button class="btn btn-sm btn-ghost" hx-post="/sites/cookiecloud/regenerate" hx-swap="none"
-              hx-confirm="重新生成 KEY 和密码？扩展里也需要同步修改。">{{ icon("key") }}重新生成</button>
-    </div>
+    <details class="site-disclosure setup-guide"><summary>如何连接 CookieCloud？</summary>
+      <ol class="steps-list"><li>安装 CookieCloud 浏览器扩展。</li><li>选择「上传到服务器」，粘贴上方三项配置。</li><li>同步域名关键词填你的 PT 域名，每行一个。</li><li>保存并点击「手动同步」，刷新此页面。</li></ol>
+      <p class="help">扩展和 ReelReady 在同一台电脑上时，可使用 localhost。</p>
+    </details>
+    <div class="sync-footer"><span class="faint small">配置保存在本机</span><button class="btn btn-sm btn-ghost" hx-post="/sites/cookiecloud/regenerate" hx-swap="none" hx-confirm="重新生成 KEY 和密码？扩展里也需要同步修改。">{{ icon("key") }}重新生成</button></div>
   </section>
 
-  <section class="panel">
-    <h2>添加站点</h2>
+  <section class="panel discovery-panel" id="discovery-panel" hx-get="/sites" hx-select="#discovery-panel" hx-target="this" hx-swap="outerHTML" hx-trigger="sitesChanged from:body" hx-disinherit="hx-select hx-target">
+    <div class="panel-head"><h2>发现站点 <span class="heading-count">{{ detected | length }}</span></h2><button class="btn btn-sm" type="button" data-manual-site>{{ icon("plus") }}手动添加站点</button></div>
+    <p class="section-description">仅显示含登录 Cookie 的候选，是否仍有效需连接测试确认。</p>
+    <div class="site-search">{{ icon("search") }}<input type="text" placeholder="搜索站点名称或域名" aria-label="搜索发现的站点" data-site-search autocomplete="off" id="site-search" hx-preserve></div>
+    <div class="discovery-scroll" tabindex="0" role="region" aria-label="站点列表，可滚动查看更多">
     {% if detected %}
-    <div style="margin-bottom:16px">
-      <div class="muted small" style="margin-bottom:8px">从同步的 cookie 里识别出这些 NexusPHP 站，点一下即可添加：</div>
-      <div class="detected">
-        {% for host in detected %}
-        <form hx-post="/sites/add" hx-swap="none">
-          <input type="hidden" name="kind" value="nexusphp">
-          <input type="hidden" name="base_url" value="https://{{ host }}">
-          <button class="chip-btn" type="submit">{{ icon("plus") }}{{ host }}</button>
-        </form>
-        {% endfor %}
+    <div class="site-discovery-grid" data-site-grid>
+      {% for host in detected %}
+      <div class="site-choice" data-site-choice data-search-text="{{ detected_names[host] }} {{ host }}">
+      <form hx-post="/sites/add" hx-swap="none" hx-sync="this:drop" hx-disabled-elt="find button">
+        <input type="hidden" name="kind" value="{{ detected_kinds[host] }}"><input type="hidden" name="base_url" value="https://{{ host }}"><input type="hidden" name="name" value="{{ detected_names[host] }}">
+        <button class="site-tile" type="submit" title="{{ detected_names[host] }} · {{ host }} · 点击添加并测试" aria-label="添加 {{ detected_names[host] }}，{{ host }}">
+          {{ site_logo(detected_icons[host], detected_names[host]) }}<span class="site-tile-name">{{ detected_names[host] }}</span><span class="site-tile-add">{{ icon("plus") }}</span>
+        </button>
+      </form>
+      <form class="site-hide-form" hx-post="/sites/discovery/visibility" hx-swap="none" hx-sync="this:drop" hx-disabled-elt="find button"><input type="hidden" name="host" value="{{ host }}"><button type="submit" class="site-hide" title="隐藏 {{ detected_names[host] }}" aria-label="隐藏 {{ detected_names[host] }}">×</button></form>
       </div>
+      {% endfor %}
     </div>
+    <p class="site-search-empty muted" hidden>没有匹配的站点，试试其他名称或域名。</p>
+    {% else %}<div class="discovery-empty">暂无待添加站点。同步浏览器 Cookie 或手动添加。</div>{% endif %}
+
+    {% if other_sites %}
+    <details class="site-disclosure other-sites"><summary>其他站点浏览记录 <span class="heading-count">{{ other_sites | length }}</span><span class="disclosure-note">需额外配置或适配</span></summary>
+      <p class="section-description">这些域名留有 Cookie，不代表已登录。Rousi Pro 需配置 API Key，其余站点需专用适配。</p>
+      <div class="other-site-grid">{% for site in other_sites %}<div class="other-site" title="{{ site.hosts | join(' · ') }}">{{ site_logo(site.icon, site.name) }}<div><strong>{{ site.name }}</strong><span>{{ (site.hosts | length ~ " 个域名") if site.hosts | length > 1 else site.hosts[0] }}</span>{% if site.kind == "rousipro" %}<button type="button" class="btn btn-sm" data-configure-api="rousipro" data-site-name="{{ site.name }}" data-site-url="https://{{ site.hosts[0] }}">配置 API Key</button>{% endif %}</div><form hx-post="/sites/discovery/visibility" hx-swap="none" hx-sync="this:drop"><input type="hidden" name="host" value="{{ site.hosts[0] }}"><button class="btn btn-sm" title="隐藏 {{ site.name }}" aria-label="隐藏 {{ site.name }}">隐藏</button></form></div>{% endfor %}</div>
+    </details>
     {% endif %}
 
-    <form hx-post="/sites/add" hx-swap="none" class="form-grid" style="grid-template-columns:1fr 1fr">
-      <div class="field">
-        <label class="title">类型</label>
-        <select name="kind" onchange="document.querySelectorAll('[data-kind]').forEach(el => el.hidden = el.dataset.kind !== this.value)">
-          {% for key, label in site_kinds.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="field">
-        <label class="title">名称</label>
-        <input type="text" name="name" placeholder="可留空">
-      </div>
-      <div class="field wide" data-kind="mteam">
-        <label class="title">API Key</label>
-        <input type="password" name="api_key" placeholder="馒头 控制台 → 实验室 → 存取令牌">
-        <div class="help">API 地址默认 https://api.m-team.cc，如有变化可在添加后修改</div>
-      </div>
-      <div class="field wide" data-kind="nexusphp" hidden>
-        <label class="title">站点地址</label>
-        <input type="text" name="base_url" placeholder="https://example.org">
-      </div>
-      <div class="field wide" data-kind="nexusphp" hidden>
-        <label class="title">Cookie（可选）</label>
-        <textarea name="cookie" placeholder="留空则使用 CookieCloud 同步的 cookie；也可以从 Edge 开发者工具 → 网络 → 请求头里复制 Cookie 粘贴到这里"></textarea>
-      </div>
-      <div class="field wide">
-        <button class="btn btn-primary" type="submit">{{ icon("plus") }}添加并测试</button>
-      </div>
-    </form>
+    <details class="site-disclosure hidden-sites"><summary>已隐藏站点 <span class="heading-count">{{ hidden_sites | length }}</span></summary>
+      <p class="section-description">隐藏后不再显示在发现列表，浏览器再次同步也不会重新出现。可随时恢复。</p>
+      <div class="other-site-grid">{% for site in hidden_sites %}<div class="other-site">{{ site_logo(site.icon, site.name) }}<div><strong>{{ site.name }}</strong><span>{{ site.host }}</span></div><form hx-post="/sites/discovery/visibility" hx-swap="none" hx-sync="this:drop" hx-disabled-elt="find button"><input type="hidden" name="host" value="{{ site.host }}"><input type="hidden" name="hidden" value="false"><button class="btn btn-sm" title="恢复 {{ site.name }}" aria-label="恢复 {{ site.name }}">恢复</button></form></div>{% else %}<p class="help">暂无隐藏站点。</p>{% endfor %}</div>
+    </details>
+
+    <details class="site-disclosure manual-site" id="manual-site" hx-preserve><summary>{{ icon("plus") }}手动添加 / API Key</summary>
+      <form hx-post="/sites/add" hx-swap="none" class="form-grid manual-site-form" hx-sync="this:drop" hx-disabled-elt="find button">
+        <div class="field"><label class="title" for="site-kind">类型</label><select name="kind" id="site-kind" onchange="this.form.querySelectorAll('[data-kind]').forEach(el => el.hidden = !el.dataset.kind.split(' ').includes(this.value))">{% for key, label in site_kinds.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+        <div class="field"><label class="title" for="site-name">名称</label><input type="text" name="name" id="site-name" placeholder="可留空"></div>
+        <div class="field wide" data-kind="mteam rousipro"><label class="title" for="site-api-key">API Key</label><input type="password" name="api_key" id="site-api-key" placeholder="填入所选站点的个人 API Key"><div class="help" data-kind="mteam">馒头：控制台 → 实验室 → 存取令牌。默认连接 api.m-team.cc。</div><div class="help" data-kind="rousipro" hidden>Rousi Pro：账户设置 → API Key；需要 profile:read、torrent:read、torrent:download 权限。</div></div>
+        <div class="field wide" data-kind="nexusphp unit3d rousipro" hidden><label class="title" for="site-url">站点地址</label><input type="text" name="base_url" id="site-url" placeholder="输入或选择已同步的域名" list="synced-cookie-hosts"><datalist id="synced-cookie-hosts">{% for host in synced_hosts %}<option value="https://{{ host }}">{% endfor %}</datalist><div class="help" data-kind="nexusphp unit3d">自动使用匹配的 Cookie，选择与站点匹配的类型。</div><div class="help" data-kind="rousipro" hidden>使用个人 API Key 连接此地址，留空默认 rousi.pro。</div></div>
+        <div class="field wide" data-kind="nexusphp unit3d" hidden><label class="title" for="site-cookie">Cookie（可选）</label><textarea name="cookie" id="site-cookie" placeholder="留空使用 CookieCloud；也可手动粘贴 Cookie"></textarea></div>
+        <div class="field wide"><button class="btn btn-primary" type="submit">添加并测试</button></div>
+      </form>
+    </details>
+    </div>
   </section>
 </div>
 
-<section class="panel" style="margin-top:18px">
-  <h2>我的站点</h2>
-  {% for s in sites %}
+<div id="connected-sites" hx-get="/sites" hx-select="#connected-sites" hx-target="this" hx-swap="outerHTML" hx-trigger="sitesChanged from:body{% if sites | selectattr('status', 'equalto', 'testing') | list %}, every 2s{% endif %}" hx-disinherit="hx-select hx-target">
+{% for category, title in [('standard', '我的站点')] %}
+{% set grouped_sites = sites %}
+<section class="panel connected-sites" id="{{ category }}-sites">
+  <div class="panel-head"><h2>{{ title }} <span class="heading-count">{{ grouped_sites | length }}</span></h2>{% if category == 'custom' %}<button class="btn btn-sm" type="button" data-manual-site>{{ icon("plus") }}手动添加站点</button>{% else %}<span class="faint small">管理连接与同步状态</span>{% endif %}</div>
+  {% for s in grouped_sites %}
   <div class="site-row">
-    <div class="site-icon">{{ s.name[:1] | upper }}</div>
-    <div class="site-main">
-      <div class="site-name">
-        {{ s.name }}
-        <span class="pill {{ s.status }}">{{ {"ok": "正常", "invalid": "登录失效", "error": "出错", "unknown": "未检测"}[s.status] }}</span>
-        {% if not s.enabled %}<span class="pill no-dot">已停用</span>{% endif %}
-      </div>
-      <div class="site-meta">
-        {{ site_kinds[s.kind] }} · {{ s.base_url }}
-        {% if s.kind == "nexusphp" %} · {{ "CookieCloud 自动同步" if s.use_cookiecloud else "手动 cookie" }}{% endif %}
-        {% if s.status_message %} · {{ s.status_message }}{% endif %}
-        {% if s.last_checked_at %} · {{ s.last_checked_at | when }}{% endif %}
-      </div>
+    {{ site_logo(site_icons[s.id], s.name) }}
+    <div class="site-main"><div class="site-name">{{ s.name }}<span class="pill {{ s.status }}">{{ {"ok": "正常", "invalid": "登录失效", "error": "出错", "unknown": "未检测", "testing": "测试中"}[s.status] }}</span>{% if not s.enabled %}<span class="pill no-dot">已停用</span>{% endif %}</div>
+      <div class="site-meta">{{ s.base_url }} · {{ "CookieCloud 自动同步" if s.kind not in ("mteam", "rousipro") and s.use_cookiecloud else site_kinds[s.kind] }}</div>
+      {% if s.status_message %}<div class="site-status-message">{{ s.status_message }}{% if s.last_checked_at %} · {{ s.last_checked_at | when }}{% endif %}</div>{% endif %}
     </div>
-    <div class="site-actions">
-      <button class="btn btn-sm" hx-post="/sites/{{ s.id }}/test" hx-swap="none">测试</button>
-      <button class="btn btn-sm btn-icon" type="button" data-toggle="#site-edit-{{ s.id }}" title="编辑">{{ icon("edit") }}</button>
-      <button class="btn btn-sm" hx-post="/sites/{{ s.id }}/toggle" hx-swap="none">{{ "停用" if s.enabled else "启用" }}</button>
-      <button class="btn btn-sm btn-icon btn-danger" hx-post="/sites/{{ s.id }}/delete" hx-swap="none"
-              hx-confirm="删除站点「{{ s.name }}」？" title="删除">{{ icon("trash") }}</button>
-    </div>
+    <div class="site-actions"><button class="btn btn-sm" hx-post="/sites/{{ s.id }}/test" hx-swap="none" hx-sync="this:drop" hx-disabled-elt="this" {{ "disabled" if s.status == "testing" }}>{{ "测试中…" if s.status == "testing" else "测试连接" }}</button><button class="btn btn-sm btn-icon" type="button" data-toggle="#site-edit-{{ s.id }}" title="编辑 {{ s.name }}">{{ icon("edit") }}</button><button class="btn btn-sm" hx-post="/sites/{{ s.id }}/toggle" hx-swap="none">{{ "停用" if s.enabled else "启用" }}</button><button class="btn btn-sm btn-icon btn-danger" hx-post="/sites/{{ s.id }}/delete" hx-swap="none" hx-confirm="删除站点「{{ s.name }}」？" title="删除 {{ s.name }}">{{ icon("trash") }}</button></div>
   </div>
-  <form class="site-edit form-grid" id="site-edit-{{ s.id }}" hidden hx-post="/sites/{{ s.id }}/update" hx-swap="none">
-    <div class="field"><label class="title">名称</label><input type="text" name="name" value="{{ s.name }}"></div>
-    <div class="field"><label class="title">{{ "API 地址" if s.kind == "mteam" else "站点地址" }}</label><input type="text" name="base_url" value="{{ s.base_url }}"></div>
-    {% if s.kind == "mteam" %}
-      <div class="field wide"><label class="title">API Key</label><input type="password" name="api_key" placeholder="留空保持不变"></div>
-    {% else %}
-      <div class="field wide">
-        <label class="title">Cookie</label>
-        <textarea name="cookie" placeholder="留空保持不变"></textarea>
-      </div>
-      <div class="field bool">
-        <label class="switch"><input type="checkbox" name="use_cookiecloud" {{ "checked" if s.use_cookiecloud }}><span class="track"></span>从 CookieCloud 自动更新 cookie</label>
-      </div>
-    {% endif %}
+  <form class="site-edit form-grid" id="site-edit-{{ s.id }}" hx-preserve hidden hx-post="/sites/{{ s.id }}/update" hx-swap="none">
+    <div class="field"><label class="title">名称</label><input type="text" name="name" value="{{ s.name }}"></div><div class="field"><label class="title">{{ "API 地址" if s.kind in ("mteam", "rousipro") else "站点地址" }}</label><input type="text" name="base_url" value="{{ s.base_url }}"></div>
+    {% if s.kind in ("mteam", "rousipro") %}<div class="field wide"><label class="title">API Key</label><input type="password" name="api_key" placeholder="留空保持不变"></div>
+    {% else %}<div class="field wide"><label class="title">Cookie</label><textarea name="cookie" placeholder="留空保持不变"></textarea></div><div class="field bool"><label class="switch"><input type="checkbox" name="use_cookiecloud" {{ "checked" if s.use_cookiecloud }}><span class="track"></span>从 CookieCloud 自动更新</label></div>{% endif %}
     <div class="field wide"><button class="btn btn-primary btn-sm" type="submit">保存并测试</button></div>
   </form>
-  {% else %}
-  <div class="muted">还没有站点。添加馒头 API Key，或者先配置 CookieCloud 让 ReelReady 自动识别你登录过的 NexusPHP 站。</div>
-  {% endfor %}
+  {% else %}<div class="connected-empty">{{ icon("inbox") }}<div><strong>{{ '还没有自定义站点' if category == 'custom' else '还没有添加站点' }}</strong><p>{{ '点击「手动添加站点」，填写名称、地址与连接配置。' if category == 'custom' else '从上方发现列表选择站点即可添加。' }}</p></div></div>{% endfor %}
 </section>
+{% endfor %}
+</div>
 {% endblock %}

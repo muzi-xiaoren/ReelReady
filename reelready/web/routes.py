@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Resp
 from sqlalchemy import func, select
 
 from ..db import session_scope
+from ..cookiecloud import synced_cookie_hosts
 from ..downloader import DownloaderError, QBittorrent
 from ..models import (
     STAGE_LABELS,
@@ -22,10 +23,15 @@ from ..notifier import NotifyError, render_single, send_mail
 from ..scheduler import JOBS, next_run, scheduler
 from ..services.clients import make_tmdb
 from ..services.movies import AddMovieError, add_manual, approve, cache_poster, poster_path
-from ..services.pt import download_candidate
-from ..services.sites import add_site, detected_sites, load_cookiecloud, test_site
-from ..settings import EMAIL_PRESETS, SECTIONS, load_settings, save_settings
+from ..services.pt import download_candidate, release_wait_reason
+from ..services.sites import add_site, detected_sites, load_cookiecloud, discovery_identity, hidden_discovery_sites, set_discovery_hidden
+from ..services.site_tests import queue_site_test
+from ..services.movie_metadata import queue_metadata, metadata_pending
+from .forms import REGIONS
+from ..site_identity import site_identity
+from ..settings import EMAIL_PRESETS, SECTIONS, load_settings, save_settings, update_section
 from ..sites import SITE_KINDS, SiteError
+from ..sites.catalog import supported_kind, lookup_site, site_icon_url
 from ..sources.tmdb import TMDBError
 from . import forms
 from .app import templates, toast
@@ -110,15 +116,33 @@ def movie_detail(request: Request, movie_id: int) -> HTMLResponse:
         events = list(
             session.scalars(select(Event).where(Event.movie_id == movie_id).order_by(Event.created_at.desc()).limit(50))
         )
+    metadata_loading = metadata_pending(movie_id)
+    early_search = load_settings().pt.early_search
+    show_pt_results = early_search or not release_wait_reason(movie)
+    if movie.metadata_checked_at is None and (movie.douban_id or movie.tmdb_id or movie.imdb_id):
+        metadata_loading = queue_metadata(movie_id) or metadata_loading
     return _render(
         request,
         "movie_detail.html",
         nav="movies",
         movie=movie,
+        metadata_pending=metadata_loading,
+        show_pt_results=show_pt_results,
+        release_confirmed=not release_wait_reason(movie),
+        region_names=REGIONS,
         events=events,
         stages=[(int(s), label) for s, label in STAGE_LABELS.items()],
         status_label=STATUS_LABELS[MovieStatus(movie.status)],
     )
+
+
+@router.post("/movies/{movie_id}/metadata")
+def movie_metadata_refresh(movie_id: int) -> Response:
+    with session_scope() as session:
+        if session.get(Movie, movie_id) is None:
+            raise HTTPException(404)
+    queued = queue_metadata(movie_id)
+    return toast("正在后台更新电影资料" if queued else "资料正在更新或队列已满，请稍后查看", HX_Refresh="true")
 
 
 @router.post("/movies/add")
@@ -210,6 +234,13 @@ def movie_check(movie_id: int) -> Response:
 
 @router.post("/movies/{movie_id}/search")
 def movie_search(movie_id: int) -> Response:
+    settings = load_settings()
+    with session_scope() as session:
+        movie = session.get(Movie, movie_id)
+        if movie is None:
+            raise HTTPException(404)
+        if not settings.pt.early_search and release_wait_reason(movie):
+            return toast("提前搜索已关闭，等待数字版日期到达或确认平台上线后再搜索", "warn")
     scheduler.trigger("pt_scan", [movie_id])
     return toast("已加入 PT 搜索队列，稍后刷新查看")
 
@@ -281,6 +312,21 @@ def sites_page(request: Request) -> HTMLResponse:
         synced_at = blob.updated_at if blob else None
     data, _ = load_cookiecloud(settings)
     server = str(request.base_url).rstrip("/") + "/cookiecloud"
+    synced_hosts = synced_cookie_hosts(data or {})
+    hidden = hidden_discovery_sites()
+    detected = [host for host in detected_sites(settings) if discovery_identity(host) not in hidden]
+    other_sites_by_id = {}
+    for host in synced_hosts:
+        if discovery_identity(host) in hidden:
+            continue
+        entry = lookup_site(host)
+        if entry and supported_kind(host) in (None, "rousipro"):
+            group = other_sites_by_id.setdefault(entry["id"], {
+                "name": entry["name"], "icon": site_icon_url(host), "hosts": [],
+                "kind": supported_kind(host),
+            })
+            group["hosts"].append(host)
+    other_sites = list(other_sites_by_id.values())
     return _render(
         request,
         "sites.html",
@@ -291,8 +337,35 @@ def sites_page(request: Request) -> HTMLResponse:
         server=server,
         synced_at=synced_at,
         cookie_domains=len((data or {}).get("cookie_data") or {}),
-        detected=detected_sites(settings),
+        detected=detected,
+        detected_kinds={host: supported_kind(host) or "nexusphp" for host in detected},
+        detected_names={host: (lookup_site(host) or {}).get("name", host) for host in detected},
+        detected_icons={host: site_icon_url(host) for host in detected},
+        site_icons={site.id: site_icon_url(_site_host(site.base_url)) for site in sites},
+        other_sites=other_sites,
+        hidden_sites=[{"host": host, "name": (lookup_site(host) or {}).get("name", host), "icon": site_icon_url(host)} for host in hidden.values()],
+        synced_hosts=synced_hosts,
     )
+
+
+def _site_host(url: str) -> str:
+    from urllib.parse import urlsplit
+
+    host = urlsplit(url).hostname or ""
+    # M-Team's API and website use different hosts.
+    return "kp.m-team.cc" if host == "api.m-team.cc" else host
+
+
+@router.post("/sites/discovery/visibility")
+def site_discovery_visibility(host: Annotated[str, Form()], hidden: Annotated[bool, Form()] = True) -> Response:
+    host = host.strip().lower().lstrip(".")
+    data, _ = load_cookiecloud(load_settings())
+    known = {discovery_identity(item) for item in synced_cookie_hosts(data or {})}
+    saved = hidden_discovery_sites()
+    if discovery_identity(host) not in known and discovery_identity(host) not in saved:
+        return toast("该站点不在浏览器同步记录中", "error")
+    set_discovery_hidden(host, hidden)
+    return toast("已归入隐藏站点" if hidden else "已恢复显示；含登录 Cookie 时会出现在发现列表", HX_Trigger_After_Settle="sitesChanged")
 
 
 @router.post("/sites/add")
@@ -302,6 +375,7 @@ def site_add(
     name: Annotated[str, Form()] = "",
     api_key: Annotated[str, Form()] = "",
     cookie: Annotated[str, Form()] = "",
+    category: Annotated[str, Form()] = "standard",
 ) -> Response:
     if kind not in SITE_KINDS:
         return toast("不支持的站点类型", "error")
@@ -310,12 +384,20 @@ def site_add(
         name = name or "馒头"
         if not api_key.strip():
             return toast("请填写馒头的 API Key", "error")
+    elif kind == "rousipro":
+        base_url = base_url or "https://rousi.pro"
+        name = name or "Rousi Pro"
+        if not api_key.strip():
+            return toast("请在 Rousi Pro 账户设置创建个人 API Key，并填写到这里", "error")
     elif not base_url.strip():
         return toast("请填写站点地址", "error")
     settings = load_settings()
-    site = add_site(settings, kind=kind, name=name, base_url=base_url, api_key=api_key, cookie=cookie)
-    ok, message = test_site(settings, site.id)
-    return toast(f"已添加「{site.name}」：{message}", "ok" if ok else "warn", HX_Refresh="true")
+    site, created = add_site(settings, kind=kind, name=name, base_url=base_url, api_key=api_key, cookie=cookie, category=category)
+    if not created:
+        return toast(f"「{site.name}」已存在，未重复添加", HX_Trigger_After_Settle="sitesChanged")
+    result = queue_site_test(site.id)
+    message = "正在后台测试连接" if result == "queued" else "测试队列已满，可稍后点击测试连接"
+    return toast(f"已添加「{site.name}」，{message}", HX_Trigger_After_Settle="sitesChanged")
 
 
 @router.post("/sites/{site_id}/update")
@@ -331,16 +413,24 @@ def site_update(
         site = session.get(Site, site_id)
         if site is None:
             raise HTTPException(404)
+        if site.status == "testing":
+            return toast("连接测试进行中，请完成后再编辑配置", "warn")
         site.name = name.strip() or site.name
         site.base_url = base_url.strip().rstrip("/") or site.base_url
+        key = site_identity(site.kind, site.base_url)
+        other = session.scalar(select(Site.id).where(Site.identity_key == key, Site.id != site_id))
+        if other:
+            session.rollback()
+            return toast("该站点已存在，请编辑已有站点", "warn")
+        site.identity_key = key
         if api_key.strip():
             site.api_key = api_key.strip()
         if cookie.strip():
             site.cookie = cookie.strip()
         site.use_cookiecloud = use_cookiecloud is not None
         site.status = "unknown"
-    ok, message = test_site(load_settings(), site_id)
-    return toast(f"已保存：{message}", "ok" if ok else "warn", HX_Refresh="true")
+    result = queue_site_test(site_id)
+    return toast("已保存，连接测试在后台进行" if result != "busy" else "已保存，测试队列已满，请稍后测试", HX_Trigger_After_Settle="sitesChanged")
 
 
 @router.post("/sites/{site_id}/toggle")
@@ -351,13 +441,14 @@ def site_toggle(site_id: int) -> Response:
             raise HTTPException(404)
         site.enabled = not site.enabled
         enabled = site.enabled
-    return toast("已启用" if enabled else "已停用", HX_Refresh="true")
+    return toast("已启用" if enabled else "已停用", HX_Trigger_After_Settle="sitesChanged")
 
 
 @router.post("/sites/{site_id}/test")
 def site_test(site_id: int) -> Response:
-    ok, message = test_site(load_settings(), site_id)
-    return toast(message, "ok" if ok else "error", HX_Refresh="true")
+    result = queue_site_test(site_id)
+    messages = {"queued": "已开始后台测试", "pending": "该站点正在测试，请稍候", "busy": "测试队列已满，请稍后重试", "missing": "站点不存在"}
+    return toast(messages[result], "warn" if result in ("busy", "missing") else "ok", HX_Trigger_After_Settle="sitesChanged")
 
 
 @router.post("/sites/{site_id}/delete")
@@ -367,7 +458,7 @@ def site_delete(site_id: int) -> Response:
         if site is None:
             raise HTTPException(404)
         session.delete(site)
-    return toast("已删除站点", HX_Refresh="true")
+    return toast("已删除站点", HX_Trigger_After_Settle="sitesChanged")
 
 
 @router.post("/sites/cookiecloud/regenerate")
@@ -394,14 +485,11 @@ def settings_page(request: Request) -> HTMLResponse:
 async def settings_save(section: str, request: Request) -> Response:
     if section not in dict(SECTIONS):
         raise HTTPException(404)
-    settings = load_settings()
     form = {k: v for k, v in (await request.form()).items() if isinstance(v, str)}
     try:
-        updated = forms.parse(getattr(settings, section), form)
+        update_section(section, lambda current: forms.parse(current, form))
     except ValueError as exc:
         return toast(f"保存失败：{exc}", "error")
-    setattr(settings, section, updated)
-    save_settings(settings)
     return toast("设置已保存")
 
 

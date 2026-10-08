@@ -58,6 +58,8 @@ class Movie(Base):
     year: Mapped[int | None] = mapped_column(Integer)
     poster_url: Mapped[str | None] = mapped_column(Text)
     overview: Mapped[str | None] = mapped_column(Text)
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    metadata_checked_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     douban_id: Mapped[str | None] = mapped_column(String(32), unique=True)
     tmdb_id: Mapped[int | None] = mapped_column(Integer, unique=True)
@@ -124,6 +126,8 @@ class Site(Base):
     __tablename__ = "sites"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    identity_key: Mapped[str | None] = mapped_column(String(512), unique=True)
+    category: Mapped[str] = mapped_column(String(16), default="standard")
     kind: Mapped[str] = mapped_column(String(16))  # mteam / nexusphp
     name: Mapped[str] = mapped_column(String(64))
     base_url: Mapped[str] = mapped_column(String(255))
@@ -132,7 +136,7 @@ class Site(Base):
     api_key: Mapped[str | None] = mapped_column(Text)
     # Refresh the cookie from CookieCloud whenever the browser pushes a new snapshot.
     use_cookiecloud: Mapped[bool] = mapped_column(Boolean, default=True)
-    status: Mapped[str] = mapped_column(String(16), default="unknown")  # unknown / ok / invalid / error
+    status: Mapped[str] = mapped_column(String(16), default="unknown")  # unknown / testing / ok / invalid / error
     status_message: Mapped[str | None] = mapped_column(Text)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
