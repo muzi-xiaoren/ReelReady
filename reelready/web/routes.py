@@ -299,7 +299,14 @@ def events_page(request: Request, kind: str = "") -> HTMLResponse:
         events = list(session.scalars(query))
     from ..notifier import KIND_LABELS
 
-    return _render(request, "events.html", nav="events", events=events, kind=kind, kind_labels=KIND_LABELS)
+    return _render(request, "events.html", nav="events", events=events, kind=kind, kind_labels=KIND_LABELS, retention_days=load_settings().events.retention_days)
+
+
+@router.post('/events/{event_id}/delete')
+def event_delete(event_id: int) -> Response:
+    from ..services.events import delete_event
+    delete_event(event_id)
+    return toast('动态已删除')
 
 
 # ---------------------------------------------------------------- sites

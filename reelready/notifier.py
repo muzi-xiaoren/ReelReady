@@ -79,8 +79,9 @@ def _item(title: str, message: str, when: datetime | None = None) -> str:
 </div>"""
 
 
-def render_single(title: str, message: str) -> str:
-    return _layout(title, _item(title, message))
+def render_single(title: str, message: str, when: datetime | None = None) -> str:
+    note = f'事件发生时间：{when:%Y-%m-%d %H:%M}。邮件可能因配置或网络原因延迟送达。\n' if when else ''
+    return _layout(title, _item(title, note + message))
 
 
 def render_digest(groups: dict[str, list[tuple[str, str, datetime]]]) -> str:

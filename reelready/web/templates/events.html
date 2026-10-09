@@ -9,6 +9,8 @@
   </div>
 </div>
 
+<p class="help">{% if retention_days %}动态保留 {{ retention_days }} 天，每天自动清理到期记录。{% else %}动态永久保留。{% endif %} <a href="/settings#events">设置保留时间 →</a></p>
+
 <div class="tabs">
   <a class="tab {{ 'active' if not kind }}" href="/events">全部</a>
   {% for key, label in kind_labels.items() %}
@@ -32,6 +34,9 @@
       {{ e.created_at | when }}
       <div class="faint">{% if e.kind != "added" %}{{ "已通知" if e.notified else ("待发送" if e.urgent else "待汇总") }}{% endif %}</div>
     </div>
+    <button class="btn btn-sm btn-icon btn-danger" type="button" title="删除动态" aria-label="删除动态：{{ e.title }}"
+            hx-post="/events/{{ e.id }}/delete" hx-target="closest .event-row" hx-swap="outerHTML" hx-disabled-elt="this"
+            hx-confirm="删除这条动态？" data-confirm-description="只删除这条记录，不影响影片或下载任务；尚未发送的通知也会取消。">{{ icon("trash") }}</button>
   </div>
   {% else %}
   <div class="empty" style="border:none">

@@ -132,6 +132,10 @@ class CookieCloudSettings(BaseModel):
     password: str = Field(default_factory=lambda: _random_token(24))
 
 
+class EventsSettings(BaseModel):
+    retention_days: int | None = Field(default=None, ge=1, le=36500, title="动态保留天数", description="留空永久保留。填写正整数后，每天自动删除超过该天数的动态（包括未发送的通知），不影响影片和下载任务。", json_schema_extra={"widget": "optional_int"})
+
+
 class AppSettings(BaseModel):
     collect: CollectSettings = Field(default_factory=CollectSettings)
     check: CheckSettings = Field(default_factory=CheckSettings)
@@ -141,6 +145,7 @@ class AppSettings(BaseModel):
     email: EmailSettings = Field(default_factory=EmailSettings)
     tmdb: TMDBSettings = Field(default_factory=TMDBSettings)
     network: NetworkSettings = Field(default_factory=NetworkSettings)
+    events: EventsSettings = Field(default_factory=EventsSettings)
     cookiecloud: CookieCloudSettings = Field(default_factory=CookieCloudSettings)
 
 
@@ -152,6 +157,7 @@ SECTIONS: list[tuple[str, str]] = [
     ("rules", "选种规则"),
     ("qbittorrent", "qBittorrent"),
     ("email", "邮件通知"),
+    ("events", "动态记录"),
     ("tmdb", "TMDB"),
     ("network", "网络"),
 ]

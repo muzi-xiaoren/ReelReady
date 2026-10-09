@@ -1,6 +1,7 @@
 """Search PT sites for monitored movies and hand the best torrent to qBittorrent."""
 
 import logging
+import threading
 import time
 from datetime import date
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ log = logging.getLogger(__name__)
 
 # How many search hits are kept on the movie for display / manual download.
 KEEP_CANDIDATES = 30
+_download_lock = threading.Lock()
 
 
 @dataclass
@@ -212,6 +214,15 @@ def _save_scan(movie_id: int, ranked: list[Evaluated], errors: list[str]) -> Non
 
 def download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: TorrentInfo) -> bool:
     """Fetch the torrent from the site and add it to qBittorrent. Returns True on success."""
+    with _download_lock:
+        with session_scope() as session:
+            movie = session.get(Movie, movie_id)
+            if movie is None or movie.status == MovieStatus.COMPLETED:
+                return False
+        return _download(settings, movie_id, site, torrent)
+
+
+def _download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: TorrentInfo) -> bool:
     try:
         content = site.download(torrent)
         with QBittorrent(settings.qbittorrent) as qb:
@@ -265,6 +276,8 @@ def download_candidate(settings: AppSettings, movie_id: int, index: int, *, site
         movie = session.get(Movie, movie_id)
         if movie is None or index < 0:
             raise SiteError("找不到这个种子，请重新搜索")
+        if movie.status == MovieStatus.COMPLETED:
+            raise SiteError('该影片已提交过下载，请在 qBittorrent 中查看，无需重复下载')
         candidates = movie.last_pt_candidates or []
         if site_id is not None and torrent_id is not None:
             data = next((dict(item) for item in candidates if item.get('site_id') == site_id and str(item.get('torrent_id')) == torrent_id), None)

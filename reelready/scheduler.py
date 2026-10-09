@@ -15,7 +15,7 @@ from .db import session_scope
 from .models import JobState, now
 from .services.checker import run_check
 from .services.collector import run_collect
-from .services.events import notify_urgent, send_digest
+from .services.events import notify_urgent, send_digest, cleanup_events
 from .services.pt import run_pt_scan
 from .settings import AppSettings, load_settings
 
@@ -41,6 +41,7 @@ JOBS: dict[str, Job] = {
         Job("check", "检测上线状态", run_check, lambda s: s.check.interval_hours, takes_movies=True),
         Job("pt_scan", "搜索 PT 并下载", run_pt_scan, lambda s: s.pt.interval_hours, takes_movies=True),
         Job("digest", "发送每日汇总", lambda s: send_digest(s), None),
+        Job("events_cleanup", "清理到期动态", cleanup_events, lambda s: 24),
     ]
 }
 

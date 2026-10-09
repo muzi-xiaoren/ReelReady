@@ -105,6 +105,8 @@ def parse(section: BaseModel, form: dict[str, str]) -> BaseModel:
                 if any(not re.fullmatch(r"[A-Z]{2}", item) for item in values):
                     raise ValueError("地区代码应为两个英文字母")
             data[view.name] = list(dict.fromkeys(values))
+        elif view.kind == "optional_int":
+            data[view.name] = int(raw) if raw else None
         elif view.kind == "int":
             data[view.name] = int(float(raw or 0))
         elif view.kind == "float":

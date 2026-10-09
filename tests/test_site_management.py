@@ -323,6 +323,91 @@ class SiteManagementTests(unittest.TestCase):
         self.assertIn('刷新', json.loads(response.headers['HX-Trigger'])['toast']['message'])
         download.assert_not_called()
 
+    def test_notifications_commit_each_send_before_later_unexpected_failure(self):
+        from reelready.models import Event
+        from reelready.services.events import notify_urgent
+        self.settings.email.enabled = True
+        with db.session_scope() as session:
+            session.add_all([Event(kind='downloaded', title='First 已开始下载', urgent=True), Event(kind='downloaded', title='Second', urgent=True)])
+        with patch('reelready.services.events.send_mail', side_effect=[None, RuntimeError('fixture')]) as send:
+            with self.assertRaises(RuntimeError):
+                notify_urgent(self.settings)
+        self.assertIn('事件发生时间', send.call_args_list[0].args[2])
+        self.assertIn('下载任务已提交', send.call_args_list[0].args[1])
+        with patch('reelready.services.events.send_mail') as retry:
+            notify_urgent(self.settings)
+        self.assertEqual(retry.call_count, 1)
+        self.assertIn('Second', retry.call_args.args[1])
+
+    def test_concurrent_notifications_send_event_once(self):
+        from reelready.models import Event
+        from reelready.services.events import notify_urgent
+        self.settings.email.enabled = True
+        with db.session_scope() as session:
+            session.add(Event(kind='downloaded', title='fixture', urgent=True))
+        with patch('reelready.services.events.send_mail', side_effect=lambda *args: time.sleep(0.05)) as send:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                list(pool.map(lambda _: notify_urgent(self.settings), range(2)))
+        self.assertEqual(send.call_count, 1)
+
+    def test_completed_movie_is_not_submitted_again(self):
+        from reelready.models import MovieStatus
+        from reelready.services.pt import download
+        from reelready.torrent_rules import TorrentInfo
+        from unittest.mock import Mock
+        with db.session_scope() as session:
+            movie = Movie(title='fixture', status=MovieStatus.COMPLETED)
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+        site = Mock()
+        with patch('reelready.services.pt.QBittorrent') as qb:
+            self.assertFalse(download(self.settings, movie_id, site, TorrentInfo(1, 'fixture', '1', 'fixture')))
+        site.download.assert_not_called()
+        qb.assert_not_called()
+
+    def test_event_retention_blank_and_positive_days(self):
+        response = self.client.post('/settings/events', data={'retention_days': '30'}, headers={'HX-Request': 'true'})
+        self.assertEqual(load_settings().events.retention_days, 30)
+        self.client.post('/settings/events', data={'retention_days': ''}, headers={'HX-Request': 'true'})
+        self.assertIsNone(load_settings().events.retention_days)
+        for value in ('0', '-1', '1.5'):
+            response = self.client.post('/settings/events', data={'retention_days': value}, headers={'HX-Request': 'true'})
+            self.assertIn('保存失败', json.loads(response.headers['HX-Trigger'])['toast']['message'])
+            self.assertIsNone(load_settings().events.retention_days)
+
+    def test_event_cleanup_respects_retention_and_keeps_movies(self):
+        from datetime import timedelta
+        from reelready.models import Event, now
+        from reelready.services.events import cleanup_events
+        with db.session_scope() as session:
+            movie = Movie(title='fixture')
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+            session.add_all([Event(kind='downloaded', title='old', movie_id=movie_id, created_at=now()-timedelta(days=31)), Event(kind='downloaded', title='recent', movie_id=movie_id)])
+        cleanup_events(self.settings)
+        with db.session_scope() as session:
+            self.assertEqual(len(session.scalars(select(Event)).all()), 2)
+        self.settings.events.retention_days = 30
+        cleanup_events(self.settings)
+        with db.session_scope() as session:
+            self.assertEqual([e.title for e in session.scalars(select(Event))], ['recent'])
+            self.assertIsNotNone(session.get(Movie, movie_id))
+
+    def test_manual_event_delete_removes_only_selected_record(self):
+        from reelready.models import Event
+        with db.session_scope() as session:
+            event = Event(kind='downloaded', title='fixture', urgent=True)
+            session.add(event)
+            session.flush()
+            event_id = event.id
+        self.assertIn('删除动态', self.client.get('/events').text)
+        response = self.client.post(f'/events/{event_id}/delete', headers={'HX-Request': 'true'})
+        self.assertEqual(response.status_code, 200)
+        with db.session_scope() as session:
+            self.assertIsNone(session.get(Event, event_id))
+
     def test_duplicate_migration_backs_up_and_preserves_movie_references(self):
         site, _ = self.add()
         with db.session_scope() as session:

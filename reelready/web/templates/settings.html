@@ -59,6 +59,8 @@
                   <button class="btn btn-icon" type="button" data-reveal="#{{ key }}-{{ f.name }}" title="显示">{{ icon("eye") }}</button>
                 </div>
                 <div class="help" data-secret-status>{{ '已填写 · 输入新值可替换，留空保持不变' if f.value else '尚未填写' }}</div>
+              {% elif f.kind == "optional_int" %}
+                <input type="number" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value if f.value is not none else '' }}" min="1" max="36500" step="1" placeholder="永久保留">
               {% elif f.kind in ("int", "float") %}
                 <input type="number" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}" step="{{ '1' if f.kind == 'int' else 'any' }}">
               {% else %}
