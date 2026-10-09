@@ -46,6 +46,8 @@ def run_check(settings: AppSettings, movie_ids: list[int] | None = None) -> str:
     finally:
         if tmdb is not None:
             tmdb.close()
+    from .pt import revalidate_cached_candidates
+    revalidate_cached_candidates(movie_ids=ids)
     summary = f"检测 {len(ids)} 部，{advanced} 部状态有更新"
     return f"{summary}，{errors} 部出错" if errors else summary
 

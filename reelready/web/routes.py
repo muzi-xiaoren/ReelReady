@@ -23,7 +23,7 @@ from ..notifier import NotifyError, render_single, send_mail
 from ..scheduler import JOBS, next_run, scheduler
 from ..services.clients import make_tmdb
 from ..services.movies import AddMovieError, add_manual, approve, cache_poster, poster_path
-from ..services.pt import download_candidate, release_wait_reason
+from ..services.pt import download_candidate, release_wait_reason, revalidate_cached_candidates
 from ..services.sites import add_site, detected_sites, load_cookiecloud, discovery_identity, hidden_discovery_sites, set_discovery_hidden
 from ..services.site_tests import queue_site_test
 from ..services.movie_metadata import queue_metadata, metadata_pending
@@ -246,10 +246,12 @@ def movie_search(movie_id: int) -> Response:
 
 
 @router.post("/movies/{movie_id}/download/{index}")
-def movie_download(movie_id: int, index: int) -> Response:
+def movie_download(movie_id: int, index: int, site_id: Annotated[int | None, Form()] = None, torrent_id: Annotated[str | None, Form()] = None) -> Response:
+    if site_id is None or torrent_id is None:
+        return toast('页面资源列表已过期，请刷新页面后再下载', 'warn')
     settings = load_settings()
     try:
-        download_candidate(settings, movie_id, index)
+        download_candidate(settings, movie_id, index, site_id=site_id, torrent_id=torrent_id)
     except SiteError as exc:
         return toast(str(exc), "error")
     from ..services.events import notify_urgent
@@ -490,6 +492,8 @@ async def settings_save(section: str, request: Request) -> Response:
         update_section(section, lambda current: forms.parse(current, form))
     except ValueError as exc:
         return toast(f"保存失败：{exc}", "error")
+    if section in ('rules', 'pt'):
+        revalidate_cached_candidates()
     return toast("设置已保存")
 
 

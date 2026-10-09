@@ -1,6 +1,8 @@
 """Rousi Pro's PeerGo API v1; public contract from PT-Depiler rousipro.ts."""
 
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, unquote
+import ipaddress
+import socket
 
 import httpx
 
@@ -84,7 +86,50 @@ class RousiProSite(BaseSite):
         url = detail.get("download_url")
         if not isinstance(url, str) or not url:
             raise SiteError("该种子不可下载，请检查下载权限；付费种子需自行处理")
-        response = self._get(url)
+        response = self._download_file(url)
         if not looks_like_torrent(response.content):
             raise SiteError("Rousi Pro 没有返回有效种子文件")
         return response.content
+
+    def _validate_download_url(self, url: str) -> None:
+        try:
+            address = urlsplit(url)
+            address.port
+        except ValueError:
+            raise SiteError('Rousi Pro 返回了无效下载地址') from None
+        same_origin = address[:2] == urlsplit(self.base)[:2]
+        if (address.scheme != 'https' and not (same_origin and address.scheme == 'http')) or not address.hostname or address.username or address.password:
+            raise SiteError('Rousi Pro 返回了不安全的下载地址')
+        if self.config.api_key and self.config.api_key in unquote(url):
+            raise SiteError('Rousi Pro 下载地址包含 API Key，已拒绝请求')
+        if same_origin:
+            return
+        try:
+            addresses = socket.getaddrinfo(address.hostname, address.port or 443, type=socket.SOCK_STREAM)
+            if not addresses or any(not ipaddress.ip_address(item[4][0]).is_global for item in addresses):
+                raise SiteError('Rousi Pro 下载地址指向本地或非公网网络，已拒绝请求')
+        except (ValueError, OSError):
+            raise SiteError('Rousi Pro 下载地址无法解析') from None
+
+    def _download_file(self, url: str) -> httpx.Response:
+        """Fetch API-provided signed files without exposing API auth to a CDN."""
+        url = urljoin(self.base, url)
+        with make_client(proxy=self.proxy, headers={'User-Agent': self.config.user_agent, 'Accept': 'application/x-bittorrent'}, trust_env=False) as client:
+            client.follow_redirects = False
+            for _ in range(4):
+                self._validate_download_url(url)
+                client.cookies.clear()
+                try:
+                    response = client.get(url)
+                except httpx.HTTPError:
+                    raise SiteError('Rousi Pro 种子文件下载失败，请检查网络或重试') from None
+                if response.status_code in (301, 302, 303, 307, 308):
+                    location = response.headers.get('Location')
+                    if not location:
+                        raise SiteError('Rousi Pro 下载重定向缺少地址')
+                    url = urljoin(url, location)
+                    continue
+                if response.status_code != 200:
+                    raise SiteError(f'Rousi Pro 种子文件 HTTP {response.status_code}')
+                return response
+        raise SiteError('Rousi Pro 下载重定向次数过多')

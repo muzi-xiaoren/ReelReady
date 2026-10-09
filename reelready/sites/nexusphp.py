@@ -99,7 +99,9 @@ class NexusPHPSite(BaseSite):
                 if params["search_area"] == 4:
                     # Hits of an IMDb search are this movie even when the list shows no IMDb link.
                     for torrent in torrents:
-                        torrent.imdb_id = torrent.imdb_id or query.imdb_id
+                        if not torrent.imdb_id:
+                            torrent.imdb_id = query.imdb_id
+                            torrent.imdb_source = 'search'
                 return torrents
         return []
 

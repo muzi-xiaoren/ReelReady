@@ -1,3 +1,4 @@
+import json
 import tempfile
 import threading
 import time
@@ -284,6 +285,43 @@ class SiteManagementTests(unittest.TestCase):
         self.assertEqual([button['hx-post'] for button in collapsed.select('button[hx-post]')], [f'/movies/{movie_id}/download/0', f'/movies/{movie_id}/download/2'])
         self.assertIn(f'/movies/{movie_id}/download/1', response.text)
         self.assertLess(response.text.index('detail-progress'), response.text.index('detail-hero'))
+
+    def test_rule_save_reranks_cache_without_visiting_sites(self):
+        from reelready.torrent_rules import TorrentInfo
+        from dataclasses import asdict
+        with db.session_scope() as session:
+            movie = Movie(title='Movie', year=2026, digital_date='2020-01-01', last_pt_candidates=[dict(asdict(TorrentInfo(1, 'fixture', '123', 'Movie 2026 1080p WEB-DL', seeders=10)), ok=True)])
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+        with patch('reelready.services.pt.open_sites') as sites, patch('reelready.services.pt.download') as download:
+            self.client.post('/settings/rules', data={'resolutions': '2160p', 'max_size_gb': '30', 'min_seeders': '1'}, headers={'HX-Request': 'true'})
+        with db.session_scope() as session:
+            movie = session.get(Movie, movie_id)
+            self.assertFalse(movie.last_pt_candidates[0]['ok'])
+            self.assertIn('清晰度', movie.last_pt_candidates[0]['reason'])
+        sites.assert_not_called()
+        download.assert_not_called()
+
+    def test_manual_download_selects_identity_after_cached_reordering(self):
+        from reelready.services.pt import download_candidate
+        from reelready.torrent_rules import TorrentInfo
+        from dataclasses import asdict
+        from unittest.mock import Mock
+        with db.session_scope() as session:
+            movie = Movie(title='Movie', last_pt_candidates=[asdict(TorrentInfo(1, 'fixture', 'B', 'second', seeders=100)), asdict(TorrentInfo(1, 'fixture', 'A', 'first', seeders=10))])
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+        with patch('reelready.services.pt.open_sites', return_value=[Mock()]), patch('reelready.services.pt.download', return_value=True) as download:
+            download_candidate(load_settings(), movie_id, 0, site_id=1, torrent_id='A')
+        self.assertEqual(download.call_args.args[3].torrent_id, 'A')
+
+    def test_old_browser_download_without_identity_does_not_submit(self):
+        with patch('reelready.web.routes.download_candidate') as download:
+            response = self.client.post('/movies/1/download/0', headers={'HX-Request': 'true'})
+        self.assertIn('刷新', json.loads(response.headers['HX-Trigger'])['toast']['message'])
+        download.assert_not_called()
 
     def test_duplicate_migration_backs_up_and_preserves_movie_references(self):
         site, _ = self.add()

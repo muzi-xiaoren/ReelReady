@@ -31,10 +31,41 @@ class RousiProTests(unittest.TestCase):
     def test_download_uses_fresh_signed_url(self):
         torrent = TorrentInfo(1, "Rousi Pro", "123", "Movie")
         response = httpx.Response(200, content=b"d4:infodee")
-        with patch.object(self.site, "_api", return_value={"download_url": "/download/123?signed=synthetic"}) as api, patch.object(self.site, "_get", return_value=response) as get:
+        with patch.object(self.site, "_api", return_value={"download_url": "/download/123?signed=temporary"}) as api, patch.object(self.site, "_download_file", return_value=response) as get:
             self.assertEqual(self.site.download(torrent), b"d4:infodee")
             api.assert_called_once_with("api/v1/torrents/123")
-            get.assert_called_once_with("/download/123?signed=synthetic")
+            get.assert_called_once_with("/download/123?signed=temporary")
+
+    def test_signed_cdn_and_redirect_never_receive_api_auth_or_cookies(self):
+        requests = []
+        def handle(request):
+            requests.append(request)
+            if len(requests) == 1:
+                return httpx.Response(302, headers={'Location': 'https://cdn.example/file?token=temporary', 'Set-Cookie': 'private=secret; Domain=rousi.pro'})
+            return httpx.Response(200, content=b'd4:infodee')
+        def client(**kwargs):
+            self.assertNotIn('Authorization', kwargs['headers'])
+            return httpx.Client(transport=httpx.MockTransport(handle), headers=kwargs['headers'])
+        public_dns = [(2, 1, 6, '', ('1.1.1.1', 443))]
+        with patch('reelready.sites.rousipro.make_client', side_effect=client), patch('reelready.sites.rousipro.socket.getaddrinfo', return_value=public_dns):
+            self.assertEqual(self.site._download_file('/download/123?token=temporary').content, b'd4:infodee')
+        self.assertEqual(requests[1].url.host, 'cdn.example')
+        for request in requests:
+            self.assertNotIn('authorization', request.headers)
+            self.assertNotIn('cookie', request.headers)
+
+    def test_unsafe_redirects_are_blocked_without_leaking_signed_url(self):
+        for url in ('http://cdn.example/file?token=private', 'https://localhost/file?token=private', 'https://rousi.pro/file?key=synthetic', 'https://user:password@cdn.example/file'):
+            calls = []
+            def handle(request):
+                calls.append(request)
+                return httpx.Response(302, headers={'Location': url})
+            with patch('reelready.sites.rousipro.make_client', return_value=httpx.Client(transport=httpx.MockTransport(handle))), patch('reelready.sites.rousipro.socket.getaddrinfo', return_value=[(2, 1, 6, '', ('127.0.0.1', 443))]):
+                with self.assertRaises(SiteError) as error:
+                    self.site._download_file('/download/123')
+            self.assertEqual(len(calls), 1)
+            self.assertNotIn('private', str(error.exception))
+            self.assertNotIn('synthetic', str(error.exception))
 
     def test_missing_download_permissions_are_reported_without_purchase(self):
         with patch.object(self.site, "_api", return_value={"download_url": "", "price": 10}), patch.object(self.site, "_get") as get:

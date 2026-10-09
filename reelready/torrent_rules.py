@@ -53,6 +53,7 @@ class TorrentInfo:
     seeders: int = 0
     detail_url: str | None = None
     imdb_id: str | None = None
+    imdb_source: str = "metadata"  # "search" is an inferred id, not independent evidence.
     category: str | None = None
 
 
@@ -195,19 +196,40 @@ def matches_movie(
         return False
     if imdb_id and torrent.imdb_id and torrent.imdb_id != imdb_id:
         return False
-    title_year = re.search(r"(?<!\d)(?:19|20)\d{2}(?!\d)", torrent.title)
-    if year and title_year and int(title_year.group()) != year:
+    normalized_titles = sorted({_normalize(t) for t in titles if t}, key=len, reverse=True)
+    name = _normalize(re.sub(r"^(?:\[[^\]]+\]\s*)+", "", torrent.title))
+    # Only consider the release-name area, not codec/group numbers after quality tags.
+    name = re.split(r'\b(?:4320|2160|1440|1080|720|576|480)[pi]\b|\b(?:web dl|webrip|bluray|blu ray|hdtv|dvdrip)\b', name, maxsplit=1)[0].strip()
+    title_spans = []
+    for title in normalized_titles:
+        title_spans.extend(match.span() for match in re.finditer(r'(?<![a-z0-9])' + re.escape(title) + r'(?![a-z0-9])', name))
+    years = [match for match in re.finditer(r'\b(?:19|20)\d{2}\b', name) if not any(start <= match.start() < end for start, end in title_spans)]
+    title_year = years[0] if years else None
+    verified_imdb = bool(imdb_id and torrent.imdb_id == imdb_id and torrent.imdb_source != 'search')
+    if year and title_year and not verified_imdb and abs(int(title_year.group()) - year) > 1:
         return False
-    prefix_text = re.sub(r"^(?:\[[^\]]+\]\s*)+", "", torrent.title[:title_year.start()]) if title_year else ""
-    prefix = _normalize(prefix_text)
-    latin_titles = [_normalize(t) for t in titles if t and re.search(r"[a-zA-Z]", t)]
-    if prefix and latin_titles and re.search(r"[a-z]", prefix):
-        if not any(prefix == t for t in latin_titles):
+    prefix = name[:title_year.start()].strip() if title_year else name
+    latin_titles = [title for title in normalized_titles if re.search(r'[a-z]', title)]
+    if prefix and latin_titles and re.search(r'[a-z]', prefix):
+        # Chinese/English aliases may be combined. A leading one-token site/group
+        # label is harmless; a different English film title is not.
+        without_chinese = prefix
+        for title in normalized_titles:
+            if re.search(r'[一-鿿]', title):
+                without_chinese = without_chinese.replace(title, ' ').strip()
+        latin_match = prefix in normalized_titles or not without_chinese
+        for title in latin_titles:
+            if without_chinese == title:
+                latin_match = True
+            elif without_chinese.endswith(' ' + title):
+                leading = without_chinese[:-len(title)].strip()
+                latin_match = latin_match or bool(re.fullmatch(r'[a-z0-9]+', leading))
+        if not latin_match:
             return False
-    if imdb_id and torrent.imdb_id == imdb_id:
+    if verified_imdb:
         return True
     text = f" {_normalize(torrent.title)} {_normalize(torrent.subtitle)} "
-    if year and str(year) not in text:
+    if year and not title_year:
         return False
     for title in titles:
         norm = _normalize(title)

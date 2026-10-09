@@ -5,12 +5,12 @@ import time
 from datetime import date
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from ..db import session_scope
 from ..downloader import DownloaderError, QBittorrent
-from ..models import Movie, MovieStatus, Site, now
-from ..settings import AppSettings
+from ..models import Movie, MovieStatus, Site, Setting, now
+from ..settings import AppSettings, SETTINGS_KEY
 from ..sites import BaseSite, LoginExpired, MovieQuery, SiteError, build_site, snapshot
 from ..torrent_rules import GB, Evaluated, TorrentInfo, matches_movie, pick_best
 from .checker import monitored_ids
@@ -112,8 +112,12 @@ def _targets(movie_ids: list[int] | None) -> list[_Target]:
     with session_scope() as session:
         movies = session.scalars(select(Movie).where(Movie.id.in_(ids)).order_by(Movie.id)) if ids else []
         return [
-            _Target(m.id, m.title, MovieQuery(m.imdb_id, m.title, m.original_title, m.year), release_wait_reason(m)) for m in movies
+            _Target(m.id, m.title, _movie_query(m), release_wait_reason(m)) for m in movies
         ]
+
+
+def _movie_query(movie: Movie) -> MovieQuery:
+    return MovieQuery(movie.imdb_id, movie.title, movie.original_title, movie.year, (movie.details or {}).get('aliases') or [])
 
 
 def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> str:
@@ -167,15 +171,22 @@ def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> st
     return summary + (f"，{len(skipped)} 部等待上线确认（提前搜索已关闭）" if skipped else "")
 
 
-def revalidate_cached_candidates(settings: AppSettings) -> int:
+def revalidate_cached_candidates(settings: AppSettings | None = None, movie_ids: list[int] | None = None) -> int:
     """Re-evaluate stored results locally, without searching sites or downloading."""
     updated = 0
     with session_scope() as session:
-        for movie in session.scalars(select(Movie).where(Movie.last_pt_candidates != [], Movie.status != MovieStatus.COMPLETED)):
+        session.execute(text('BEGIN IMMEDIATE'))
+        if settings is None:
+            row = session.get(Setting, SETTINGS_KEY)
+            settings = AppSettings.model_validate(row.value) if row else AppSettings()
+        query = select(Movie).where(Movie.last_pt_candidates != [], Movie.status != MovieStatus.COMPLETED)
+        if movie_ids is not None:
+            query = query.where(Movie.id.in_(movie_ids))
+        for movie in session.scalars(query):
             fields = TorrentInfo.__dataclass_fields__
-            hits = [TorrentInfo(**{key: value for key, value in item.items() if key in fields}) for item in movie.last_pt_candidates if (item.get('title') or '').strip()]
-            query = MovieQuery(movie.imdb_id, movie.title, movie.original_title, movie.year)
-            _, ranked = rank_for_movie(hits, settings.rules, query, release_wait_reason(movie))
+            # Legacy results do not distinguish real IMDb metadata from search inference.
+            hits = [TorrentInfo(**{**{key: value for key, value in item.items() if key in fields}, 'imdb_source': item.get('imdb_source', 'search')}) for item in movie.last_pt_candidates if (item.get('title') or '').strip() and all(key in item for key in ('site_id', 'site_name', 'torrent_id'))]
+            _, ranked = rank_for_movie(hits, settings.rules, _movie_query(movie), release_wait_reason(movie))
             movie.last_pt_candidates = [item.to_dict() for item in ranked]
             movie.last_pt_summary = f"找到 {len(ranked)} 个种子，{sum(item.ok for item in ranked)} 个可自动下载" if ranked else "暂无有效资源（已移除标题为空的解析记录）"
             updated += 1
@@ -248,13 +259,21 @@ def download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: Torr
     return True
 
 
-def download_candidate(settings: AppSettings, movie_id: int, index: int) -> None:
+def download_candidate(settings: AppSettings, movie_id: int, index: int, *, site_id: int | None = None, torrent_id: str | None = None) -> None:
     """Manually download one of the torrents found by the last scan."""
     with session_scope() as session:
         movie = session.get(Movie, movie_id)
-        if movie is None or index >= len(movie.last_pt_candidates or []):
+        if movie is None or index < 0:
             raise SiteError("找不到这个种子，请重新搜索")
-        data = dict(movie.last_pt_candidates[index])
+        candidates = movie.last_pt_candidates or []
+        if site_id is not None and torrent_id is not None:
+            data = next((dict(item) for item in candidates if item.get('site_id') == site_id and str(item.get('torrent_id')) == torrent_id), None)
+            if data is None:
+                raise SiteError('该种子已不在当前结果中，请刷新页面')
+        else:
+            if index >= len(candidates):
+                raise SiteError('找不到这个种子，请重新搜索')
+            data = dict(candidates[index])
     fields = TorrentInfo.__dataclass_fields__
     torrent = TorrentInfo(**{k: v for k, v in data.items() if k in fields})
     sites = open_sites(settings, [torrent.site_id])

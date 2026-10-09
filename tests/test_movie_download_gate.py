@@ -88,3 +88,21 @@ class MovieDownloadGateTests(unittest.TestCase):
         with patch('reelready.services.pt._targets', return_value=[target]), patch('reelready.services.pt.open_sites', return_value=[site]), patch('reelready.services.pt._mark_site_ok'), patch('reelready.services.pt._save_scan'):
             run_pt_scan(AppSettings())
         site.search.assert_called_once()
+
+    def test_combined_titles_and_unbracketed_group_prefix(self):
+        for title in ('奥德赛.The.Odyssey.2026.2160p.WEB-DL', 'The.Odyssey.奥德赛.2026.2160p.WEB-DL', 'FRDS.The.Odyssey.2026.2160p.WEB-DL'):
+            for imdb in ('tt1234567', None):
+                self.assertTrue(matches_movie(self.hit(title, imdb_id=imdb), imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026), title)
+
+    def test_numeric_film_titles_are_not_release_years(self):
+        for title, names, year in [('Blade.Runner.2049.2017.2160p.BluRay', ['银翼杀手2049', 'Blade Runner 2049'], 2017), ('1917.2019.1080p.BluRay', ['1917'], 2019)]:
+            self.assertTrue(matches_movie(self.hit(title, imdb_id=None), imdb_id=None, titles=names, year=year))
+
+    def test_year_tolerance_requires_title_and_imdb_provenance(self):
+        for difference in (-1, 1):
+            self.assertTrue(matches_movie(self.hit(f'The Odyssey {2026+difference} 1080p WEB-DL', imdb_id=None), imdb_id=None, titles=self.query.titles, year=2026))
+        verified = self.hit('The Odyssey 2020 1080p WEB-DL')
+        self.assertTrue(matches_movie(verified, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+        verified.imdb_source = 'search'
+        self.assertFalse(matches_movie(verified, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+        self.assertFalse(matches_movie(self.hit('Another Movie 2026 1080p WEB-DL'), imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))

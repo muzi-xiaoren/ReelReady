@@ -79,6 +79,8 @@ def refresh_metadata(movie_id: int) -> None:
         details['message'] = '；'.join(notes) or ('资料已更新' if douban_info or tmdb_info else '暂未匹配到详细资料，可稍后重试')
         row.details = details
         row.metadata_checked_at = now()
+    from .pt import revalidate_cached_candidates
+    revalidate_cached_candidates(movie_ids=[movie_id])
 
 
 def _run(movie_id: int) -> None:

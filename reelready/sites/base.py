@@ -17,10 +17,11 @@ class MovieQuery:
     title: str
     original_title: str | None
     year: int | None
+    aliases: list[str] = field(default_factory=list)
 
     @property
     def titles(self) -> list[str]:
-        return [t for t in dict.fromkeys([self.original_title, self.title]) if t]
+        return [t for t in dict.fromkeys([self.original_title, self.title, *self.aliases]) if t]
 
 
 @dataclass

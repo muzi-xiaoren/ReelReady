@@ -70,6 +70,8 @@ async def lifespan(_app: FastAPI):
     config.ensure_dirs()
     init_db()
     load_settings()  # creates defaults (and CookieCloud credentials) on first start
+    from ..services.pt import revalidate_cached_candidates
+    revalidate_cached_candidates()
     scheduler.start()
     log.info("ReelReady %s started, data dir %s", __version__, config.DATA_DIR)
     yield

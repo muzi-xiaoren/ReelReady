@@ -18,6 +18,7 @@
           <td class="num">{% if t.ok %}<span class="pill ok">可自动下载</span>{% else %}<span class="faint small">{{ t.reason }}</span>{% endif %}</td>
           <td class="num">
             <button class="btn btn-sm" hx-post="/movies/{{ movie.id }}/download/{{ loop.index0 }}" hx-swap="none"
+                    {% if t.site_id is defined and t.torrent_id is defined %}hx-vals='{{ {"site_id": t.site_id, "torrent_id": t.torrent_id} | tojson }}'{% endif %}
                     hx-confirm="{{ '该资源未通过自动下载判断：' ~ t.reason ~ '。仍要手动推送到 qBittorrent？' if not t.ok else '把这个种子推送到 qBittorrent？' }}">{{ icon("download") }}下载</button>
           </td>
         </tr>
