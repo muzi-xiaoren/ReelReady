@@ -263,6 +263,28 @@ class SiteManagementTests(unittest.TestCase):
         self.assertEqual(saved.check.interval_hours, 9)
         self.assertEqual(saved.check.provider_regions, ['JP', 'CN', 'US'])
 
+    def test_rejected_torrents_collapsed_with_original_download_indexes(self):
+        from bs4 import BeautifulSoup
+        with db.session_scope() as session:
+            movie = Movie(title='UI grouping fixture', digital_date='2020-01-01', last_pt_candidates=[
+                {'title': 'rejected first', 'ok': False, 'reason': 'wrong source', 'seeders': 10, 'size_bytes': 1},
+                {'title': 'accepted second', 'ok': True, 'seeders': 9, 'size_bytes': 1},
+                {'title': 'rejected third', 'ok': False, 'reason': 'too large', 'seeders': 8, 'size_bytes': 1},
+            ])
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+        response = self.client.get(f'/movies/{movie_id}')
+        self.assertEqual(response.status_code, 200)
+        page = BeautifulSoup(response.text, 'html.parser')
+        collapsed = page.select_one('details.torrent-rejected')
+        self.assertNotIn('open', collapsed.attrs)
+        self.assertIn('rejected first', collapsed.get_text())
+        self.assertNotIn('accepted second', collapsed.get_text())
+        self.assertEqual([button['hx-post'] for button in collapsed.select('button[hx-post]')], [f'/movies/{movie_id}/download/0', f'/movies/{movie_id}/download/2'])
+        self.assertIn(f'/movies/{movie_id}/download/1', response.text)
+        self.assertLess(response.text.index('detail-progress'), response.text.index('detail-hero'))
+
     def test_duplicate_migration_backs_up_and_preserves_movie_references(self):
         site, _ = self.add()
         with db.session_scope() as session:

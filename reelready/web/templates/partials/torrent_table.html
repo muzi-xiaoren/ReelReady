@@ -1,0 +1,29 @@
+{% from "partials/icons.html" import icon %}
+{% macro torrent_table(movie, candidates, accepted) %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>种子</th><th>站点</th><th>体积</th><th>做种</th><th>判定</th><th></th></tr></thead>
+      <tbody>
+      {% for t in candidates %}
+      {% if (t.ok | default(false)) == accepted %}
+        <tr class="{{ '' if t.ok else 'rejected' }}">
+          <td>
+            <div class="t-title">{% if t.detail_url %}<a href="{{ t.detail_url }}" target="_blank" rel="noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}</div>
+            {% if t.subtitle %}<div class="t-sub">{{ t.subtitle }}</div>{% endif %}
+            <div style="margin-top:4px">{% for tag in t.tags %}<span class="tag {{ 'hl' if t.ok }}">{{ tag }}</span>{% endfor %}</div>
+          </td>
+          <td class="num">{{ t.site_name }}</td>
+          <td class="num">{{ t.size_bytes | filesize }}</td>
+          <td class="num">{{ t.seeders }}</td>
+          <td class="num">{% if t.ok %}<span class="pill ok">可自动下载</span>{% else %}<span class="faint small">{{ t.reason }}</span>{% endif %}</td>
+          <td class="num">
+            <button class="btn btn-sm" hx-post="/movies/{{ movie.id }}/download/{{ loop.index0 }}" hx-swap="none"
+                    hx-confirm="{{ '该资源未通过自动下载判断：' ~ t.reason ~ '。仍要手动推送到 qBittorrent？' if not t.ok else '把这个种子推送到 qBittorrent？' }}">{{ icon("download") }}下载</button>
+          </td>
+        </tr>
+      {% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endmacro %}

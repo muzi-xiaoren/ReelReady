@@ -428,6 +428,22 @@ input:focus, select:focus, textarea:focus {
 
 .detail-hero { display: grid; grid-template-columns: 220px minmax(0, 1fr) minmax(270px, 340px); gap: 26px; align-items: start; }
 .detail-main, .detail-side { min-width: 0; }
+.detail-hero { padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev); }
+.detail-progress { margin-bottom: 20px; padding: 18px 24px 22px; }
+.progress-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; font-size: 12px; color: var(--text-soft); }
+.detail-progress .step-copy { display: grid; gap: 3px; }
+.step-note { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+.detail-progress .step.current .label { color: var(--accent); }
+.torrent-result-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 18px; }
+.torrent-empty { padding: 24px 16px; background: var(--bg); border-radius: 10px; text-align: center; color: var(--text-soft); font-size: 13px; }
+.torrent-rejected { margin-top: 18px; border-top: 1px solid var(--border); }
+.torrent-rejected > summary { cursor: pointer; list-style: none; padding: 18px 0; display: flex; align-items: center; gap: 16px; justify-content: space-between; font-size: 13px; }
+.torrent-rejected > summary::-webkit-details-marker { display: none; }
+.torrent-rejected > summary::after { content: '⌄'; color: var(--text-faint); }
+.torrent-rejected[open] > summary::after { content: '⌃'; }
+.torrent-rejected > summary > span:first-child { margin-right: auto; }
+.torrent-rejected .table-wrap { margin-top: 8px; }
+@media (max-width: 720px) { .detail-progress { padding: 16px; overflow-x: auto; } .detail-progress .stepper { min-width: 530px; } .detail-hero { padding: 18px; } .torrent-rejected > summary > .small { display: none; } }
 .detail-side { display: grid; gap: 16px; }
 .hero-status-card { padding: 22px; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(140deg, var(--bg-elev), var(--bg)); }
 .hero-status-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }

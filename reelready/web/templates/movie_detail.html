@@ -1,8 +1,22 @@
 {% extends "base.html" %}
 {% from "partials/icons.html" import icon %}
+{% from "partials/torrent_table.html" import torrent_table %}
 {% block title %}{{ movie.title }} · ReelReady{% endblock %}
 {% block content %}
 <div style="margin-bottom:18px"><a class="muted" href="/movies?tab={{ movie.status }}">← 返回{{ status_label }}</a></div>
+
+<section class="panel detail-progress" aria-label="影片进度">
+  <div class="progress-heading"><span>影片进度</span><span class="faint small">{{ movie.stage_label }}</span></div>
+  <div class="stepper">
+    {% for value, label in stages %}
+    <div class="step {{ 'done' if movie.stage >= value }} {{ 'current' if movie.stage == value }}" {% if movie.stage == value %}aria-current="step"{% endif %}>
+      <span class="dot">{% if movie.stage >= value %}✓{% else %}{{ loop.index }}{% endif %}</span>
+      <div class="step-copy"><span class="label">{{ label }}</span><span class="step-note">{{ ['关注影片', movie.digital_date or '等待数字版日期', '确认可观看', '提交至下载器'][loop.index0] }}</span></div>
+      {% if not loop.last %}<span class="line"></span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
 
 <div id="movie-information" {% if metadata_pending %}hx-get="/movies/{{ movie.id }}" hx-select="#movie-information" hx-target="this" hx-swap="outerHTML" hx-trigger="every 2s" hx-disinherit="hx-select hx-target"{% endif %}>
 {% set info = movie.details or {} %}
@@ -17,7 +31,6 @@
       <div class="detail-original">{{ movie.original_title }}</div>
     {% endif %}
     <div class="detail-meta">
-      <span class="pill stage-{{ movie.stage }}">{{ movie.stage_label }}</span>
       <span class="pill no-dot">{{ status_label }}</span>
       {% if movie.year %}<span class="pill no-dot">{{ movie.year }}</span>{% endif %}
       <span class="faint small">来源：{{ {"douban": "豆瓣热映", "tmdb": "TMDB 院线", "manual": "手动添加"}[movie.source] }} · 加入于 {{ movie.created_at | when }}</span>
@@ -109,17 +122,6 @@
 </section>
 </div>
 
-<section class="panel" style="margin-top:30px">
-  <div class="stepper">
-    {% for value, label in stages %}
-    <div class="step {{ 'done' if movie.stage >= value }} {{ 'current' if movie.stage == value }}">
-      <span class="dot">{% if movie.stage >= value %}✓{% else %}{{ loop.index }}{% endif %}</span>
-      <span class="label">{{ label }}</span>
-      {% if not loop.last %}<span class="line"></span>{% endif %}
-    </div>
-    {% endfor %}
-  </div>
-</section>
 
 <div class="grid-2" style="margin-top:18px">
   <section class="panel">
@@ -158,30 +160,14 @@
     <h2>上次搜索到的种子</h2>
     <span class="faint small">自动下载需匹配正片、通过片源与规格筛选，并有上线证据。未确认上线时继续等待。</span>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>种子</th><th>站点</th><th>体积</th><th>做种</th><th>判定</th><th></th></tr></thead>
-      <tbody>
-      {% for t in movie.last_pt_candidates %}
-        <tr class="{{ '' if t.ok else 'rejected' }}">
-          <td>
-            <div class="t-title">{% if t.detail_url %}<a href="{{ t.detail_url }}" target="_blank" rel="noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}</div>
-            {% if t.subtitle %}<div class="t-sub">{{ t.subtitle }}</div>{% endif %}
-            <div style="margin-top:4px">{% for tag in t.tags %}<span class="tag {{ 'hl' if t.ok }}">{{ tag }}</span>{% endfor %}</div>
-          </td>
-          <td class="num">{{ t.site_name }}</td>
-          <td class="num">{{ t.size_bytes | filesize }}</td>
-          <td class="num">{{ t.seeders }}</td>
-          <td class="num">{% if t.ok %}<span class="pill ok">可自动下载</span>{% else %}<span class="faint small">{{ t.reason }}</span>{% endif %}</td>
-          <td class="num">
-            <button class="btn btn-sm" hx-post="/movies/{{ movie.id }}/download/{{ loop.index0 }}" hx-swap="none"
-                    hx-confirm="{{ '该资源未通过自动下载判断：' ~ t.reason ~ '。仍要手动推送到 qBittorrent？' if not t.ok else '把这个种子推送到 qBittorrent？' }}">{{ icon("download") }}下载</button>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% set accepted_count = movie.last_pt_candidates | selectattr('ok') | list | length %}
+  {% set rejected_count = movie.last_pt_candidates | length - accepted_count %}
+  <div class="torrent-result-summary"><span class="pill ok">{{ accepted_count }} 个符合条件</span><span class="faint small">{{ rejected_count }} 个未通过筛选 · 列表为最近一次保存的结果</span></div>
+  {% if accepted_count %}{{ torrent_table(movie, movie.last_pt_candidates, true) }}{% else %}<div class="torrent-empty">暂无符合条件的种子，继续监测等待资源。</div>{% endif %}
+  {% if rejected_count %}<details class="torrent-rejected">
+    <summary><span>不符合条件的种子 <span class="heading-count">{{ rejected_count }}</span></span><span class="faint small">展开查看原因与手动下载</span></summary>
+    {{ torrent_table(movie, movie.last_pt_candidates, false) }}
+  </details>{% endif %}
 </section>
 {% endif %}
 
