@@ -7,6 +7,7 @@ from datetime import date
 from dataclasses import dataclass
 
 from sqlalchemy import select, text
+from sqlalchemy.orm import load_only
 
 from ..db import session_scope
 from ..downloader import DownloaderError, QBittorrent
@@ -112,7 +113,7 @@ def open_sites(settings: AppSettings, site_ids: list[int] | None = None) -> list
 def _targets(movie_ids: list[int] | None) -> list[_Target]:
     ids = monitored_ids(movie_ids)
     with session_scope() as session:
-        movies = session.scalars(select(Movie).where(Movie.id.in_(ids)).order_by(Movie.id)) if ids else []
+        movies = session.scalars(select(Movie).options(load_only(Movie.id, Movie.title, Movie.original_title, Movie.imdb_id, Movie.year, Movie.details, Movie.streaming, Movie.digital_date)).where(Movie.id.in_(ids)).order_by(Movie.id)) if ids else []
         return [
             _Target(m.id, m.title, _movie_query(m), release_wait_reason(m)) for m in movies
         ]
@@ -184,7 +185,7 @@ def revalidate_cached_candidates(settings: AppSettings | None = None, movie_ids:
         query = select(Movie).where(Movie.last_pt_candidates != [], Movie.status != MovieStatus.COMPLETED)
         if movie_ids is not None:
             query = query.where(Movie.id.in_(movie_ids))
-        for movie in session.scalars(query):
+        for movie in session.scalars(query.execution_options(yield_per=50)):
             fields = TorrentInfo.__dataclass_fields__
             # Legacy results do not distinguish real IMDb metadata from search inference.
             hits = [TorrentInfo(**{**{key: value for key, value in item.items() if key in fields}, 'imdb_source': item.get('imdb_source', 'search')}) for item in movie.last_pt_candidates if (item.get('title') or '').strip() and all(key in item for key in ('site_id', 'site_name', 'torrent_id'))]

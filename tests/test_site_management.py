@@ -408,6 +408,41 @@ class SiteManagementTests(unittest.TestCase):
         with db.session_scope() as session:
             self.assertIsNone(session.get(Event, event_id))
 
+    def test_connected_site_poll_does_not_load_cookiecloud(self):
+        self.add()
+        with patch('reelready.web.routes.load_cookiecloud') as cookies:
+            response = self.client.get('/sites/connected')
+        cookies.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('id="connected-sites"', response.text)
+        self.assertIn('hx-get="/sites/connected"', response.text)
+        self.assertNotIn('<html', response.text)
+
+    def test_site_page_decrypts_snapshot_only_once(self):
+        with patch('reelready.web.routes.load_cookiecloud', return_value=({}, None)) as direct, patch('reelready.services.sites.load_cookiecloud') as repeated:
+            response = self.client.get('/sites')
+        self.assertEqual(response.status_code, 200)
+        direct.assert_called_once()
+        repeated.assert_not_called()
+
+    def test_movie_cards_do_not_load_large_detail_columns(self):
+        from sqlalchemy import event
+        with db.session_scope() as session:
+            session.add(Movie(title='fixture', details={'cast': ['x'*1000]*50}, overview='story', last_pt_candidates=[{'title': 'x'*1000}]*30))
+        statements = []
+        def capture(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+        event.listen(self.engine, 'before_cursor_execute', capture)
+        try:
+            response = self.client.get('/movies?tab=candidate')
+        finally:
+            event.remove(self.engine, 'before_cursor_execute', capture)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('fixture', response.text)
+        movie_queries = [statement for statement in statements if 'FROM movies' in statement]
+        self.assertTrue(movie_queries)
+        self.assertFalse(any('movies.details' in q or 'movies.last_pt_candidates' in q or 'movies.overview' in q for q in movie_queries))
+
     def test_duplicate_migration_backs_up_and_preserves_movie_references(self):
         site, _ = self.add()
         with db.session_scope() as session:

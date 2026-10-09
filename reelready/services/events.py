@@ -3,7 +3,7 @@ import threading
 from collections import defaultdict
 from datetime import timedelta
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.orm import Session
 
 from ..db import session_scope
@@ -64,7 +64,10 @@ def notify_urgent(settings: AppSettings) -> None:
 
 def _notify_urgent(settings: AppSettings) -> None:
     with session_scope() as session:
-        ids = [event.id for event in _pending(session, urgent=True)]
+        if not settings.email.enabled:
+            session.execute(update(Event).where(Event.notified.is_(False), Event.urgent.is_(True)).values(notified=True))
+            return
+        ids = list(session.scalars(select(Event.id).where(Event.notified.is_(False), Event.urgent.is_(True)).order_by(Event.created_at)))
     # Commit each successful message separately: a later failure must not undo it.
     for event_id in ids:
         with session_scope() as session:
@@ -84,7 +87,15 @@ def _notify_urgent(settings: AppSettings) -> None:
 
 
 def send_digest(settings: AppSettings) -> str:
+    with _notification_lock:
+        return _send_digest(settings)
+
+
+def _send_digest(settings: AppSettings) -> str:
     with session_scope() as session:
+        if not settings.email.enabled:
+            session.execute(update(Event).where(Event.notified.is_(False), Event.urgent.is_(False)).values(notified=True))
+            return '邮件未启用，已跳过'
         events = _pending(session, urgent=False)
         if not events:
             return "没有需要汇总的消息"

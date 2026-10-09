@@ -13,7 +13,9 @@ Movies reach cinemas long before they are released online, and private trackers 
   - Streaming: TMDB watch providers (JustWatch data) show it can be streamed, rented or bought, or Douban lists online platforms
 - **PT search and automatic download**: M-Team (official API) and NexusPHP sites. Each scan picks the single best torrent across all sites and pushes it to qBittorrent
 - **Cookies via CookieCloud**: just stay logged in to your sites in the browser and cookies are synced automatically. ReelReady also detects the NexusPHP sites you are logged into from the synced cookies
-- **Email**: download started / failed and site login expired are sent immediately; dated / streaming / new candidates go into a daily digest. SMTP presets for QQ, 163, 126, Gmail, iCloud, Outlook and more; multiple recipients supported
+- **Email**: successful download submission, download failures and expired site logins are sent separately; dated / streaming / new candidates go into a daily digest. Submission mail includes the original event time, and each sent message is recorded separately with concurrent sending prevented. SMTP presets for QQ, 163, 126, Gmail, iCloud, Outlook and more; multiple recipients supported
+- **Event management**: delete individual records or set a retention period; leaving it blank keeps records permanently
+- **Settings auto-save**: reorder regions and resolutions; background tasks run sequentially and duplicate requests are not repeatedly queued
 - **Catch-up on startup**: the computer does not have to run 24/7; missed checks run right after startup
 
 ## Torrent rules (defaults, all configurable)
@@ -23,7 +25,9 @@ Movies reach cinemas long before they are released online, and private trackers 
 | Allowed resolutions (by priority) | 2160p > 1080p; nothing at 720p or below |
 | Excluded | Cam / TS / TC recordings, remuxes, full discs |
 | Size limit | 30 GB |
-| Ranking | resolution → Chinese subtitles → HDR / Dolby Vision → seeders |
+| Ranking | seeders → resolution → Chinese subtitles → HDR / Dolby Vision |
+
+The current stable version is **1.0.0**. Use `ghcr.io/muzi-xiaoren/reelready:1.0.0` to pin this version or `:latest` to follow releases. Images support `linux/amd64` and `linux/arm64`.
 
 ## Quick start (Windows + Docker Desktop)
 

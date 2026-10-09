@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 TICK_SECONDS = 30
 STARTUP_DELAY_SECONDS = 10
+MAX_PENDING_REQUESTS = 64
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,9 @@ class Scheduler:
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._loop, name="scheduler", daemon=True)
         self.running: str | None = None
+        self._request_lock = threading.Lock()
+        self._pending_requests: set[tuple] = set()
+        self._active_request: tuple | None = None
 
     def start(self) -> None:
         self._thread.start()
@@ -87,9 +91,19 @@ class Scheduler:
         self._stop.set()
         self._queue.put(_Request(""))
 
-    def trigger(self, job: str, movie_ids: list[int] | None = None) -> None:
+    @staticmethod
+    def _request_key(job: str, movie_ids: list[int] | None) -> tuple:
+        return job, tuple(sorted(set(movie_ids))) if movie_ids is not None else None
+
+    def trigger(self, job: str, movie_ids: list[int] | None = None) -> bool:
         """Queue a manual run; it executes on the scheduler thread."""
-        self._queue.put(_Request(job, movie_ids))
+        key = self._request_key(job, movie_ids)
+        with self._request_lock:
+            if job not in JOBS or self._stop.is_set() or key in self._pending_requests or key == self._active_request or len(self._pending_requests) >= MAX_PENDING_REQUESTS:
+                return False
+            self._pending_requests.add(key)
+            self._queue.put(_Request(job, list(movie_ids) if movie_ids is not None else None))
+        return True
 
     def _loop(self) -> None:
         if self._stop.wait(STARTUP_DELAY_SECONDS):
@@ -102,7 +116,11 @@ class Scheduler:
                 continue
             if request.job in JOBS:
                 # A manual run of a full job counts as its scheduled run.
-                self._execute(JOBS[request.job], request.movie_ids, record=request.movie_ids is None)
+                try:
+                    self._execute(JOBS[request.job], request.movie_ids, record=request.movie_ids is None)
+                finally:
+                    with self._request_lock:
+                        self._pending_requests.discard(self._request_key(request.job, request.movie_ids))
 
     def _run_due(self) -> None:
         settings = load_settings()
@@ -112,10 +130,22 @@ class Scheduler:
         for job in JOBS.values():
             if self._stop.is_set():
                 return
+            with self._request_lock:
+                if self._request_key(job.name, None) in self._pending_requests:
+                    continue
             if _is_due(job, settings, last_runs.get(job.name), current):
                 self._execute(job, None, record=True)
 
     def _execute(self, job: Job, movie_ids: list[int] | None, record: bool) -> None:
+        with self._request_lock:
+            self._active_request = self._request_key(job.name, movie_ids)
+        try:
+            self._execute_job(job, movie_ids, record)
+        finally:
+            with self._request_lock:
+                self._active_request = None
+
+    def _execute_job(self, job: Job, movie_ids: list[int] | None, record: bool) -> None:
         settings = load_settings()
         self.running = job.label
         status, message = "ok", ""

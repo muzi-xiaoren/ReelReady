@@ -97,13 +97,15 @@ def _host(url: str) -> str:
     return (urlsplit(url).hostname or "").lower().removeprefix("www.")
 
 
-def detected_sites(settings: AppSettings) -> list[str]:
+def detected_sites(settings: AppSettings, *, data: dict[str, Any] | None = None, known: set[str] | None = None) -> list[str]:
     """NexusPHP hosts found in the CookieCloud snapshot that are not configured yet."""
-    data, _ = load_cookiecloud(settings)
+    if data is None:
+        data, _ = load_cookiecloud(settings)
     if not data:
         return []
-    with session_scope() as session:
-        known = {site_identity(site.kind, site.base_url) for site in session.scalars(select(Site))}
+    if known is None:
+        with session_scope() as session:
+            known = {site_identity(kind, url) for kind, url in session.execute(select(Site.kind, Site.base_url))}
     return [h for h in detect_cookie_hosts(data) if site_identity(supported_kind(h) or "nexusphp", f"https://{h}") not in known]
 
 

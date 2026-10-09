@@ -82,28 +82,5 @@
   </section>
 </div>
 
-<div id="connected-sites" hx-get="/sites" hx-select="#connected-sites" hx-target="this" hx-swap="outerHTML" hx-trigger="sitesChanged from:body{% if sites | selectattr('status', 'equalto', 'testing') | list %}, every 2s{% endif %}" hx-disinherit="hx-select hx-target">
-{% for category, title in [('standard', '我的站点')] %}
-{% set grouped_sites = sites %}
-<section class="panel connected-sites" id="{{ category }}-sites">
-  <div class="panel-head"><h2>{{ title }} <span class="heading-count">{{ grouped_sites | length }}</span></h2>{% if category == 'custom' %}<button class="btn btn-sm" type="button" data-manual-site>{{ icon("plus") }}手动添加站点</button>{% else %}<span class="faint small">管理连接与同步状态</span>{% endif %}</div>
-  {% for s in grouped_sites %}
-  <div class="site-row">
-    {{ site_logo(site_icons[s.id], s.name) }}
-    <div class="site-main"><div class="site-name">{{ s.name }}<span class="pill {{ s.status }}">{{ {"ok": "正常", "invalid": "登录失效", "error": "出错", "unknown": "未检测", "testing": "测试中"}[s.status] }}</span>{% if not s.enabled %}<span class="pill no-dot">已停用</span>{% endif %}</div>
-      <div class="site-meta">{{ s.base_url }} · {{ "CookieCloud 自动同步" if s.kind not in ("mteam", "rousipro") and s.use_cookiecloud else site_kinds[s.kind] }}</div>
-      {% if s.status_message %}<div class="site-status-message">{{ s.status_message }}{% if s.last_checked_at %} · {{ s.last_checked_at | when }}{% endif %}</div>{% endif %}
-    </div>
-    <div class="site-actions"><button class="btn btn-sm" hx-post="/sites/{{ s.id }}/test" hx-swap="none" hx-sync="this:drop" hx-disabled-elt="this" {{ "disabled" if s.status == "testing" }}>{{ "测试中…" if s.status == "testing" else "测试连接" }}</button><button class="btn btn-sm btn-icon" type="button" data-toggle="#site-edit-{{ s.id }}" title="编辑 {{ s.name }}">{{ icon("edit") }}</button><button class="btn btn-sm" hx-post="/sites/{{ s.id }}/toggle" hx-swap="none">{{ "停用" if s.enabled else "启用" }}</button><button class="btn btn-sm btn-icon btn-danger" hx-post="/sites/{{ s.id }}/delete" hx-swap="none" hx-confirm="删除站点「{{ s.name }}」？" title="删除 {{ s.name }}">{{ icon("trash") }}</button></div>
-  </div>
-  <form class="site-edit form-grid" id="site-edit-{{ s.id }}" hx-preserve hidden hx-post="/sites/{{ s.id }}/update" hx-swap="none">
-    <div class="field"><label class="title">名称</label><input type="text" name="name" value="{{ s.name }}"></div><div class="field"><label class="title">{{ "API 地址" if s.kind in ("mteam", "rousipro") else "站点地址" }}</label><input type="text" name="base_url" value="{{ s.base_url }}"></div>
-    {% if s.kind in ("mteam", "rousipro") %}<div class="field wide"><label class="title">API Key</label><input type="password" name="api_key" placeholder="留空保持不变"></div>
-    {% else %}<div class="field wide"><label class="title">Cookie</label><textarea name="cookie" placeholder="留空保持不变"></textarea></div><div class="field bool"><label class="switch"><input type="checkbox" name="use_cookiecloud" {{ "checked" if s.use_cookiecloud }}><span class="track"></span>从 CookieCloud 自动更新</label></div>{% endif %}
-    <div class="field wide"><button class="btn btn-primary btn-sm" type="submit">保存并测试</button></div>
-  </form>
-  {% else %}<div class="connected-empty">{{ icon("inbox") }}<div><strong>{{ '还没有自定义站点' if category == 'custom' else '还没有添加站点' }}</strong><p>{{ '点击「手动添加站点」，填写名称、地址与连接配置。' if category == 'custom' else '从上方发现列表选择站点即可添加。' }}</p></div></div>{% endfor %}
-</section>
-{% endfor %}
-</div>
+{% include "partials/connected_sites.html" %}
 {% endblock %}

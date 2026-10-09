@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func, select
+from sqlalchemy.orm import defer
 
 from ..db import session_scope
 from ..cookiecloud import synced_cookie_hosts
@@ -85,7 +86,7 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
         tab = MovieStatus.MONITORING
     with session_scope() as session:
         counts = dict(session.execute(select(Movie.status, func.count()).group_by(Movie.status)).all())
-        query = select(Movie).where(Movie.status == tab)
+        query = select(Movie).options(defer(Movie.details, raiseload=True), defer(Movie.overview, raiseload=True), defer(Movie.last_pt_candidates, raiseload=True)).where(Movie.status == tab)
         if q:
             like = f"%{q.strip()}%"
             query = query.where(Movie.title.like(like) | Movie.original_title.like(like))
@@ -228,7 +229,8 @@ def movie_delete(movie_id: int) -> Response:
 
 @router.post("/movies/{movie_id}/check")
 def movie_check(movie_id: int) -> Response:
-    scheduler.trigger("check", [movie_id])
+    if not scheduler.trigger("check", [movie_id]):
+        return toast('该检测任务已在队列中或队列已满，请稍后查看', 'warn')
     return toast("已加入检测队列，稍后刷新查看")
 
 
@@ -241,7 +243,8 @@ def movie_search(movie_id: int) -> Response:
             raise HTTPException(404)
         if not settings.pt.early_search and release_wait_reason(movie):
             return toast("提前搜索已关闭，等待数字版日期到达或确认平台上线后再搜索", "warn")
-    scheduler.trigger("pt_scan", [movie_id])
+    if not scheduler.trigger("pt_scan", [movie_id]):
+        return toast('该搜索任务已在队列中或队列已满，请稍后查看', 'warn')
     return toast("已加入 PT 搜索队列，稍后刷新查看")
 
 
@@ -281,7 +284,8 @@ def poster(movie_id: int) -> Response:
 def job_run(name: str) -> Response:
     if name not in JOBS:
         raise HTTPException(404)
-    scheduler.trigger(name)
+    if not scheduler.trigger(name):
+        return toast('任务已在运行或等待队列中，队列满时请稍后重试', 'warn')
     return toast(f"「{JOBS[name].label}」已开始运行，完成后刷新查看")
 
 
@@ -312,6 +316,13 @@ def event_delete(event_id: int) -> Response:
 # ---------------------------------------------------------------- sites
 
 
+@router.get('/sites/connected', response_class=HTMLResponse)
+def connected_sites_fragment(request: Request) -> HTMLResponse:
+    with session_scope() as session:
+        sites = list(session.scalars(select(Site).options(defer(Site.cookie, raiseload=True), defer(Site.api_key, raiseload=True)).order_by(Site.id)))
+    return _render(request, 'partials/connected_sites.html', sites=sites, site_kinds=SITE_KINDS, site_icons={site.id: site_icon_url(_site_host(site.base_url)) for site in sites})
+
+
 @router.get("/sites", response_class=HTMLResponse)
 def sites_page(request: Request) -> HTMLResponse:
     settings = load_settings()
@@ -323,7 +334,8 @@ def sites_page(request: Request) -> HTMLResponse:
     server = str(request.base_url).rstrip("/") + "/cookiecloud"
     synced_hosts = synced_cookie_hosts(data or {})
     hidden = hidden_discovery_sites()
-    detected = [host for host in detected_sites(settings) if discovery_identity(host) not in hidden]
+    known = {site_identity(site.kind, site.base_url) for site in sites}
+    detected = [host for host in detected_sites(settings, data=data or {}, known=known) if discovery_identity(host) not in hidden]
     other_sites_by_id = {}
     for host in synced_hosts:
         if discovery_identity(host) in hidden:
