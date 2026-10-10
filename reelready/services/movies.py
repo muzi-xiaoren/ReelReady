@@ -14,6 +14,7 @@ from ..models import Event, Movie, MovieStatus, Stage, now
 from ..settings import AppSettings
 from ..sources.douban import DoubanClient, DoubanError, DoubanMovie, parse_douban_id
 from ..sources.tmdb import TMDBClient, TMDBError, TMDBMovie, parse_imdb_id, parse_tmdb_id
+from ..sources.movie_metadata import matching_titles
 from .clients import make_douban, make_tmdb, tmdb_proxy
 from .events import add_event
 
@@ -120,7 +121,10 @@ def assign_ids(
     return movie
 
 
-def apply_douban(movie: Movie, item: DoubanMovie) -> None:
+def apply_douban(movie: Movie, item: DoubanMovie) -> bool:
+    if movie.tmdb_id and not same_douban_movie(movie, item):
+        log.info("Ignoring mismatched Douban metadata for movie %s", movie.id)
+        return False
     movie.douban_rating = item.rating
     movie.douban_votes = item.votes
     if item.title:
@@ -129,7 +133,9 @@ def apply_douban(movie: Movie, item: DoubanMovie) -> None:
     movie.year = movie.year or item.year
     movie.poster_url = item.cover or movie.poster_url
     movie.overview = item.intro or movie.overview
-    merge_details(movie, item.details, item.release_date)
+    release_date = (movie.details or {}).get('release_date') if movie.tmdb_id else None
+    merge_details(movie, item.details, release_date or item.release_date)
+    return True
 
 
 def apply_tmdb(movie: Movie, item: TMDBMovie) -> None:
@@ -139,7 +145,8 @@ def apply_tmdb(movie: Movie, item: TMDBMovie) -> None:
     if not movie.douban_id and item.title:
         movie.title = item.title
     movie.original_title = item.original_title or movie.original_title
-    movie.year = movie.year or item.year
+    # Detail/search responses contain the primary release year; never keep a regional re-release year.
+    movie.year = item.year or movie.year
     movie.poster_url = movie.poster_url or item.poster
     movie.overview = movie.overview or item.overview
     merge_details(movie, item.details, item.release_date)
@@ -151,15 +158,26 @@ def merge_details(movie: Movie, details: dict, release_date: str | None = None) 
     # Keep richer TMDB roles when Douban's actor list only provides names.
     if any(p.get('role') for p in values.get('cast') or []) and not any(p.get('role') for p in details.get('cast') or []):
         details.pop('cast', None)
-    values.update({key: value for key, value in details.items() if value})
+    values.update({key: value for key, value in details.items() if value or isinstance(value, bool)})
     if release_date:
         values['release_date'] = release_date
     movie.details = values
 
 
+def same_douban_movie(movie: Movie, item: DoubanMovie) -> bool:
+    if movie.imdb_id and item.imdb_id:
+        return movie.imdb_id == item.imdb_id
+    release = str((movie.details or {}).get('release_date') or '')
+    year = int(release[:4]) if release[:4].isdigit() else movie.year
+    titles = [movie.title, movie.original_title or '', *((movie.details or {}).get('aliases') or [])]
+    return matching_titles(titles, [item.title, item.original_title or '', *(item.details.get('aliases') or [])]) and (
+        year is None or item.year is None or abs(year - item.year) <= 1
+    )
+
+
 def link_ids(session: Session, movie: Movie, tmdb: TMDBClient | None, douban: DoubanClient) -> Movie:
     """Best effort: fill in the missing TMDB / IMDb / Douban ids of a movie."""
-    titles = [movie.original_title or "", movie.title]
+    titles = [movie.original_title or "", movie.title, *((movie.details or {}).get('aliases') or [])]
     if tmdb is not None:
         try:
             if not movie.tmdb_id:
@@ -174,11 +192,12 @@ def link_ids(session: Session, movie: Movie, tmdb: TMDBClient | None, douban: Do
             log.info("TMDB lookup failed for %s: %s", movie.title, exc)
     if not movie.douban_id:
         try:
-            found = douban.find([movie.title, movie.original_title or ""], movie.year)
+            found = douban.find([movie.title, movie.original_title or "", *((movie.details or {}).get('aliases') or [])], movie.year)
             if found:
-                movie = assign_ids(session, movie, douban_id=found.id)
-                movie.douban_rating = movie.douban_rating or found.rating
-                movie.douban_votes = movie.douban_votes or found.votes
+                detail = douban.detail(found.id)
+                if same_douban_movie(movie, detail):
+                    movie = assign_ids(session, movie, douban_id=found.id)
+                    apply_douban(movie, detail)
         except DoubanError as exc:
             log.info("Douban lookup failed for %s: %s", movie.title, exc)
     if movie.douban_id and not movie.overview:
@@ -305,12 +324,13 @@ def _fetch_new(
 
 
 def upsert_candidate_douban(session: Session, item: DoubanMovie) -> tuple[Movie, bool]:
-    existing = find_existing(session, douban_id=item.id)
+    existing = find_existing(session, douban_id=item.id, imdb_id=item.imdb_id)
     if existing is not None:
+        existing = assign_ids(session, existing, douban_id=item.id, imdb_id=item.imdb_id)
         existing.douban_rating = item.rating
         existing.douban_votes = item.votes
         return existing, False
-    movie = Movie(title=item.title, source="douban", douban_id=item.id)
+    movie = Movie(title=item.title, source="douban", douban_id=item.id, imdb_id=item.imdb_id)
     apply_douban(movie, item)
     session.add(movie)
     session.flush()
@@ -318,12 +338,13 @@ def upsert_candidate_douban(session: Session, item: DoubanMovie) -> tuple[Movie,
 
 
 def upsert_candidate_tmdb(session: Session, item: TMDBMovie) -> tuple[Movie, bool]:
-    existing = find_existing(session, tmdb_id=item.id)
+    existing = find_existing(session, tmdb_id=item.id, imdb_id=item.imdb_id)
     if existing is not None:
+        existing = assign_ids(session, existing, tmdb_id=item.id, imdb_id=item.imdb_id)
         existing.tmdb_rating = item.rating
         existing.tmdb_votes = item.votes
         return existing, False
-    movie = Movie(title=item.title, source="tmdb", tmdb_id=item.id)
+    movie = Movie(title=item.title, source="tmdb", tmdb_id=item.id, imdb_id=item.imdb_id)
     apply_tmdb(movie, item)
     session.add(movie)
     session.flush()

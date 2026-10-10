@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from ..http import make_client
-from .movie_metadata import tmdb_details
+from .movie_metadata import matching_titles, tmdb_details
 
 API = "https://api.themoviedb.org/3"
 IMAGE_BASE = "https://image.tmdb.org/t/p/w342"
@@ -131,7 +131,11 @@ class TMDBClient:
         movies: list[TMDBMovie] = []
         for page in range(1, max_pages + 1):
             data = self._get("/movie/now_playing", region=region, page=page)
-            movies.extend(_from_payload(item) for item in data.get("results") or [])
+            for payload in data.get("results") or []:
+                item = _from_payload(payload)
+                # With region set, this is a local theatrical date, possibly a re-release.
+                item.details['collection_releases'] = [{'region': region, 'date': item.release_date}]
+                movies.append(item)
             if page >= int(data.get("total_pages") or 1):
                 break
         return movies
@@ -163,6 +167,8 @@ class TMDBClient:
         """Best-effort lookup of a movie by title + year."""
         for title in dict.fromkeys(t for t in titles if t):
             for result in self.search(title, year):
-                if year is None or result.year is None or abs(result.year - year) <= 1:
+                if matching_titles(titles, [result.title, result.original_title or '']) and (
+                    year is None or result.year is None or abs(result.year - year) <= 1
+                ):
                     return result
         return None

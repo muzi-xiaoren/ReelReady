@@ -73,7 +73,9 @@ def refresh_metadata(movie_id: int) -> None:
             if not row.tmdb_id and not session.scalar(select(Movie.id).where(Movie.tmdb_id == tmdb_id, Movie.id != movie_id)):
                 row.tmdb_id = tmdb_id
         if douban_info:
-            apply_douban(row, douban_info)
+            if not apply_douban(row, douban_info):
+                douban_info = None
+                notes.append('豆瓣条目与影片不匹配，已跳过该条资料')
         details = dict(row.details or {})
         details['sources'] = [source for source, item in [('豆瓣', douban_info), ('TMDB', tmdb_info)] if item]
         details['message'] = '；'.join(notes) or ('资料已更新' if douban_info or tmdb_info else '暂未匹配到详细资料，可稍后重试')

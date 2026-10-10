@@ -33,6 +33,7 @@
     <div class="detail-meta">
       <span class="pill no-dot">{{ status_label }}</span>
       {% if movie.year %}<span class="pill no-dot">{{ movie.year }}</span>{% endif %}
+      {% if info.is_rerelease %}<span class="pill no-dot">重映收集</span>{% endif %}
       <span class="faint small">来源：{{ {"douban": "豆瓣热映", "tmdb": "TMDB 院线", "manual": "手动添加"}[movie.source] }} · 加入于 {{ movie.created_at | when }}</span>
     </div>
 
@@ -48,6 +49,7 @@
     {% if info.tagline %}<p class="detail-tagline">{{ info.tagline }}</p>{% endif %}
     <dl class="movie-facts">
       <dt>上映日期</dt><dd>{{ info.pubdates | join(' / ') if info.pubdates else info.release_date or '暂无准确日期' }}</dd>
+      {% if info.is_rerelease and info.collection_releases %}<dt>本次院线</dt><dd>{% for release in info.collection_releases if release.date %}{{ region_names.get(release.region, release.region) }} · {{ release.date }}{% if not loop.last %} / {% endif %}{% endfor %}</dd>{% endif %}
       <dt>类型</dt><dd>{{ info.genres | join(' / ') if info.genres else '暂无' }}</dd>
       <dt>片长</dt><dd>{% if info.durations %}{{ info.durations | join(' / ') }}{% elif info.runtime %}{{ info.runtime }} 分钟{% else %}暂无{% endif %}</dd>
       <dt>制片地区</dt><dd>{{ info.countries | join(' / ') if info.countries else '暂无' }}</dd>

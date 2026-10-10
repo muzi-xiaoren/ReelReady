@@ -1,5 +1,16 @@
 """Normalize public movie information; keep theatrical and digital dates separate."""
+import unicodedata
 from urllib.parse import urlsplit
+
+
+def matching_titles(expected: list[str], actual: list[str]) -> bool:
+    """Require a full title match, ignoring only spacing and punctuation."""
+    def normalized(value: str) -> str:
+        return ''.join(c for c in unicodedata.normalize('NFKC', value).casefold() if c.isalnum())
+
+    wanted = {normalized(title) for title in expected if title}
+    found = {normalized(title) for title in actual if title}
+    return bool((wanted - {''}) & (found - {''}))
 
 
 def person(item: dict, tmdb: bool = False) -> dict:

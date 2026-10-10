@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from ..http import make_client
-from .movie_metadata import douban_details
+from .movie_metadata import douban_details, matching_titles
 
 API = "https://m.douban.com/rexxar/api/v2"
 MOBILE_UA = (
@@ -178,6 +178,8 @@ class DoubanClient:
         """Best-effort lookup of a movie on Douban by title + year."""
         for title in dict.fromkeys(t for t in titles if t):
             for result in self.search(title):
-                if year is None or result.year is None or abs(result.year - year) <= 1:
+                if matching_titles(titles, [result.title, result.original_title or '']) and (
+                    year is None or result.year is None or abs(result.year - year) <= 1
+                ):
                     return result
         return None

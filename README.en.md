@@ -6,7 +6,7 @@ Movies reach cinemas long before they are released online, and private trackers 
 
 ## Features
 
-- **Collection**: Douban "now showing" plus TMDB now-playing lists for several regions, filtered by rating and vote count (Douban and TMDB are evaluated separately; passing either is enough). Re-releases of old movies are skipped
+- **Collection**: Douban "now showing" plus TMDB now-playing lists for several regions, filtered by rating and vote count (Douban and TMDB are evaluated separately; passing either is enough). Old movies are excluded by their primary release date by default. Enable "Collect re-released movies" under Settings → Collection to include current re-releases while keeping the original year. Turning it off keeps movies already added
 - **Candidate / Monitoring / Completed / Blacklist** lists: collected movies wait for your approval; blacklisted movies are never collected again; you can also add a movie by pasting a Douban / TMDB / IMDb link
 - **Release tracking**. Stages only move forward: `In cinemas → Dated → Streaming → Downloaded`
   - Dated: TMDB lists a digital or physical release date

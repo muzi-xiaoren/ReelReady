@@ -12,6 +12,14 @@ from reelready.web import forms
 
 
 class SettingsControlsTests(unittest.TestCase):
+    def test_rerelease_switch_defaults_off_and_autosave_parses_both_states(self):
+        section = CollectSettings()
+        self.assertFalse(section.include_rereleases)
+        view = next(v for v in forms.describe(section) if v.name == 'include_rereleases')
+        self.assertEqual(view.kind, 'bool')
+        self.assertTrue(forms.parse(section, {'include_rereleases': 'on'}).include_rereleases)
+        self.assertFalse(forms.parse(CollectSettings(include_rereleases=True), {}).include_rereleases)
+
     def test_month_cutoff_handles_year_rollover_and_leap_day(self):
         settings = AppSettings()
         settings.collect.max_age_years = 0
