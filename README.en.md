@@ -27,7 +27,7 @@ Movies reach cinemas long before they are released online, and private trackers 
 | Size limit | 30 GB |
 | Ranking | seeders → resolution → Chinese subtitles → HDR / Dolby Vision |
 
-The current stable version is **1.0.0**. Use `ghcr.io/muzi-xiaoren/reelready:1.0.0` to pin this version or `:latest` to follow releases. Images support `linux/amd64` and `linux/arm64`.
+On the 1st of each month, a new patch version is released automatically if there are commits since the last release; see [Releases](https://github.com/muzi-xiaoren/ReelReady/releases). Pin a version such as `ghcr.io/muzi-xiaoren/reelready:1.0.1`, or use `:latest` to follow releases. Images support `linux/amd64` and `linux/arm64`.
 
 ## Quick start (Windows + Docker Desktop)
 

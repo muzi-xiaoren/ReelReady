@@ -26,7 +26,7 @@
         <a href="/settings" class="{{ 'active' if nav == 'settings' }}">设置</a>
       </nav>
       <div class="spacer"></div>
-      <span class="version">v{{ version }}</span>
+      <span class="version">{{ version if version == "dev" else "v" ~ version }}</span>
     </div>
   </header>
 

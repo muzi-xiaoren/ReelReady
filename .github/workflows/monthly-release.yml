@@ -1,0 +1,77 @@
+name: Monthly release
+
+on:
+  schedule:
+    # 01:00 UTC on the 1st, i.e. 09:00 Beijing time.
+    - cron: "0 1 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+env:
+  # Every run appends a line here and commits it, so the repository never goes 60 days
+  # without activity (GitHub would disable this schedule). These commits are not releases.
+  RUN_LOG: .github/monthly-release.log
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: next
+        name: Decide the next version
+        run: |
+          latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          # Commits since the last release, so a month already tagged by hand is not released twice.
+          if [ -n "$latest" ]; then
+            range="$latest..HEAD"
+          else
+            range="HEAD"
+          fi
+          git log "$range" --no-merges --format='- %s (%h)' -- . ":(exclude)$RUN_LOG" > notes.md
+          if [ ! -s notes.md ]; then
+            echo "result=no changes since ${latest:-the beginning}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -n "$latest" ]; then
+            IFS=. read -r major minor patch <<< "${latest#v}"
+            tag="v$major.$minor.$((patch + 1))"
+          else
+            tag="v1.0.0"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "result=released $tag ($(wc -l < notes.md | tr -d ' ') commits)" >> "$GITHUB_OUTPUT"
+
+      - name: Create the tag and release
+        if: steps.next.outputs.tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.next.outputs.tag }}
+        run: gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md
+
+      # Tags created with GITHUB_TOKEN do not trigger other workflows, so start the image build explicitly.
+      - name: Build the image
+        if: steps.next.outputs.tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.next.outputs.tag }}
+        run: gh workflow run docker.yml --ref "$TAG"
+
+      - name: Record the run
+        env:
+          RESULT: ${{ steps.next.outputs.result }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          echo "$(date -u '+%Y-%m-%d %H:%M UTC')  $RESULT" >> "$RUN_LOG"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RUN_LOG"
+          git commit -m "Record monthly release run: $RESULT"
+          # Someone may have pushed while this job ran.
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"

@@ -27,7 +27,7 @@
 | 体积上限 | 30 GB |
 | 排序 | 做种数 → 清晰度 → 中字优先 → HDR / 杜比视界优先 |
 
-当前稳定版本为 **1.0.0**。可使用 `ghcr.io/muzi-xiaoren/reelready:1.0.0` 固定版本，或 `:latest` 跟随最新发布；镜像支持 `linux/amd64` 和 `linux/arm64`。
+每月 1 日，如果上次发布后有新的提交，会自动发布一个新版本（补丁号加 1），版本列表见 [Releases](https://github.com/muzi-xiaoren/ReelReady/releases)。可使用 `ghcr.io/muzi-xiaoren/reelready:1.0.1` 这样的版本号固定版本，或 `:latest` 跟随最新发布；镜像支持 `linux/amd64` 和 `linux/arm64`。
 
 ## 快速开始（Windows + Docker Desktop）
 
