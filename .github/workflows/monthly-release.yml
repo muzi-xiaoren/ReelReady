@@ -12,14 +12,17 @@ permissions:
 
 env:
   # Every run appends a line here and commits it, so the repository never goes 60 days
-  # without activity (GitHub would disable this schedule). These commits are not releases.
+  # without activity (GitHub would disable this schedule).
   RUN_LOG: .github/monthly-release.log
+  # Only changes to what the Dockerfile copies into the image count as a new release;
+  # workflows, docs, tests, tools and the run log do not.
+  IMAGE_PATHS: Dockerfile requirements.txt reelready
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -27,15 +30,15 @@ jobs:
         name: Decide the next version
         run: |
           latest=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
-          # Commits since the last release, so a month already tagged by hand is not released twice.
+          # Image changes since the last release, so a month already tagged by hand is not released twice.
           if [ -n "$latest" ]; then
             range="$latest..HEAD"
           else
             range="HEAD"
           fi
-          git log "$range" --no-merges --format='- %s (%h)' -- . ":(exclude)$RUN_LOG" > notes.md
+          git log "$range" --no-merges --format='- %s (%h)' -- $IMAGE_PATHS > notes.md
           if [ ! -s notes.md ]; then
-            echo "result=no changes since ${latest:-the beginning}" >> "$GITHUB_OUTPUT"
+            echo "result=no image changes since ${latest:-the beginning}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [ -n "$latest" ]; then
