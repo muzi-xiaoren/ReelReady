@@ -53,6 +53,38 @@ def init_db() -> None:
         if "metadata_checked_at" not in columns:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN metadata_checked_at DATETIME")
     _migrate_site_identity()
+    _migrate_movie_years()
+
+
+def _migrate_movie_years() -> None:
+    """Backfill legacy release years locally; no API requests or movie status changes."""
+    import logging
+    import sqlite3
+    from datetime import datetime
+
+    from sqlalchemy import Integer, cast, func, select
+    from sqlalchemy.orm import load_only
+
+    from .models import Movie
+    from .services.movies import restore_primary_year
+
+    repaired = 0
+    with session_scope() as session:
+        # Only read full metadata for mismatches, in bounded batches.
+        query = select(Movie).options(load_only(Movie.id, Movie.year, Movie.tmdb_id, Movie.source, Movie.details)).where(
+            Movie.tmdb_id.is_not(None),
+            Movie.year > cast(func.substr(func.json_extract(Movie.details, '$.release_date'), 1, 4), Integer),
+        ).execution_options(yield_per=50)
+        for movie in session.scalars(query):
+            if not restore_primary_year(movie):
+                continue
+            if not repaired:
+                backup_path = config.DATA_DIR / f"before-movie-year-fix-{datetime.now():%Y%m%d-%H%M%S-%f}.db"
+                with sqlite3.connect(config.DB_PATH) as source, sqlite3.connect(backup_path) as backup:
+                    source.backup(backup)
+            repaired += 1
+    if repaired:
+        logging.getLogger(__name__).info("Restored primary release year for %s legacy movies", repaired)
 
 
 def _migrate_site_identity() -> None:

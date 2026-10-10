@@ -152,6 +152,36 @@ def apply_tmdb(movie: Movie, item: TMDBMovie) -> None:
     merge_details(movie, item.details, item.release_date)
 
 
+def restore_primary_year(movie: Movie) -> bool:
+    """Repair a legacy regional year using already cached TMDB theatrical evidence."""
+    if not movie.tmdb_id or not movie.year:
+        return False
+    details = movie.details or {}
+    try:
+        primary = date.fromisoformat(details.get('release_date') or '')
+    except (TypeError, ValueError):
+        return False
+    releases = details.get('releases') or []
+    if not isinstance(releases, list):
+        return False
+    releases = [entry for entry in releases if isinstance(entry, dict)]
+    # Do not reinterpret unverified dates or overwrite a known earlier year.
+    if primary.year >= movie.year or not any(entry.get('date') == primary.isoformat() for entry in releases):
+        return False
+    regional = []
+    for entry in releases:
+        try:
+            released = date.fromisoformat(entry.get('date') or '')
+        except (TypeError, ValueError):
+            continue
+        if released.year == movie.year and released <= date.today():
+            regional.append({'region': entry.get('region', ''), 'date': released.isoformat()})
+    if movie.source == 'tmdb' and movie.year - primary.year > 1 and regional:
+        movie.details = dict(details, is_rerelease=True, collection_releases=details.get('collection_releases') or regional)
+    movie.year = primary.year
+    return True
+
+
 def merge_details(movie: Movie, details: dict, release_date: str | None = None) -> None:
     values = dict(movie.details or {})
     details = dict(details)
@@ -341,6 +371,7 @@ def upsert_candidate_tmdb(session: Session, item: TMDBMovie) -> tuple[Movie, boo
     existing = find_existing(session, tmdb_id=item.id, imdb_id=item.imdb_id)
     if existing is not None:
         existing = assign_ids(session, existing, tmdb_id=item.id, imdb_id=item.imdb_id)
+        restore_primary_year(existing)
         existing.tmdb_rating = item.rating
         existing.tmdb_votes = item.votes
         return existing, False

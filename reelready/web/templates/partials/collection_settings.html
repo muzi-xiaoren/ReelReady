@@ -1,0 +1,40 @@
+{% from "partials/setting_field.html" import setting_field %}
+{% macro collect_field(name, label=none) %}
+  {% for f in fields if f.name == name %}{{ setting_field('collect', f, label) }}{% endfor %}
+{% endmacro %}
+
+<div class="collection-settings">
+  <div class="collection-scope">
+    <h3>收集范围</h3>
+    <div class="collection-range">
+      {{ collect_field('interval_hours') }}
+      {{ collect_field('max_age_years') }}
+      {{ collect_field('max_age_months') }}
+    </div>
+    <p class="help collection-range-help">年份和月份相加，例如 0 年 6 月表示近半年。按首映日期筛选，来源只有年份时按年份判断。</p>
+    <div class="collection-rereleases">{{ collect_field('include_rereleases') }}</div>
+  </div>
+
+  <div class="collection-source collection-douban">
+    <div class="collection-source-head">
+      <div><h3><span class="collection-source-dot"></span>豆瓣热映</h3><p>按评分和评价人数筛选豆瓣正在上映的影片。</p></div>
+      {{ collect_field('douban_enabled', '启用收集') }}
+    </div>
+    <div class="collection-thresholds">
+      {{ collect_field('douban_min_rating') }}
+      {{ collect_field('douban_min_votes') }}
+    </div>
+  </div>
+
+  <div class="collection-source collection-tmdb">
+    <div class="collection-source-head">
+      <div><h3><span class="collection-source-dot"></span>TMDB 院线</h3><p>按地区收集院线影片，评分与投票数需同时达标。</p></div>
+      {{ collect_field('tmdb_enabled', '启用收集') }}
+    </div>
+    <div class="collection-thresholds">
+      {{ collect_field('tmdb_min_rating') }}
+      {{ collect_field('tmdb_min_votes') }}
+    </div>
+    <div class="collection-regions">{{ collect_field('tmdb_regions') }}</div>
+  </div>
+</div>

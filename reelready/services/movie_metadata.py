@@ -74,6 +74,16 @@ def refresh_metadata(movie_id: int) -> None:
                 row.tmdb_id = tmdb_id
         if douban_info:
             if not apply_douban(row, douban_info):
+                if tmdb_info:
+                    # A legacy wrong link must not keep its title/summary after a verified refresh.
+                    row.douban_id = None
+                    row.douban_rating = row.douban_votes = None
+                    row.title = tmdb_info.title or row.title
+                    row.overview = tmdb_info.overview or row.overview
+                    row.details = {
+                        key: value for key, value in (row.details or {}).items()
+                        if key not in ('aliases', 'pubdates', 'durations')
+                    }
                 douban_info = None
                 notes.append('豆瓣条目与影片不匹配，已跳过该条资料')
         details = dict(row.details or {})

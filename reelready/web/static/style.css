@@ -268,6 +268,37 @@ input:focus, select:focus, textarea:focus {
 .settings-nav a { padding: 8px 12px; border-radius: 8px; color: var(--text-soft); }
 .settings-nav a:hover { background: var(--bg-soft); color: var(--text); }
 .settings-section { scroll-margin-top: 84px; }
+.settings-layout > div { min-width: 0; }
+
+/* Collection controls stay grouped rather than flowing into unrelated grid rows. */
+.collection-settings { display: grid; gap: 22px; }
+.collection-settings h3 { margin: 0 0 14px; font-size: 14px; font-weight: 600; }
+.collection-range { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.collection-range .field .help { display: none; }
+.collection-range-help { margin: 8px 0 0; }
+.collection-settings .field { min-width: 0; }
+.collection-rereleases { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-soft); }
+.collection-rereleases .switch { width: 100%; gap: 20px; }
+.collection-rereleases .switch > .track { order: 1; margin-left: auto; }
+.collection-rereleases .switch > span:last-child { min-width: 0; }
+.collection-rereleases .help { max-width: 660px; }
+.collection-source { border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.collection-source-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.collection-source-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.collection-source-head p { color: var(--text-faint); font-size: 12px; margin: 5px 0 0; }
+.collection-source-head > .field { flex-shrink: 0; }
+.collection-source-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--douban); }
+.collection-tmdb .collection-source-dot { background: var(--tmdb); }
+.collection-thresholds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.collection-regions { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.collection-regions .region-options { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); max-height: 308px; }
+@media (max-width: 600px) {
+  .collection-range { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .collection-range > .field:first-child { grid-column: 1 / -1; }
+  .collection-source { padding: 16px; }
+  .collection-source-head { align-items: flex-start; flex-wrap: wrap; }
+  .collection-regions .region-options { grid-template-columns: 1fr; }
+}
 
 /* ---------------------------------------------------------------- tabs */
 

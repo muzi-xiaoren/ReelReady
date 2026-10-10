@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ReelReady{% endblock %}</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/style.css?v={{ version }}-detail3">
+  <link rel="stylesheet" href="/static/style.css?v={{ static_revision['style.css'] }}">
   <script src="/static/vendor/htmx.min.js"></script>
   <script>
     // Local runs without the Docker image have no vendored copy; fall back to the CDN.
@@ -44,6 +44,6 @@
       <div class="confirm-actions"><button class="btn" value="cancel" autofocus>取消</button><button class="btn btn-primary" id="confirm-accept" value="accept">确认</button></div>
     </form>
   </dialog>
-  <script src="/static/app.js?v={{ version }}-autosave2"></script>
+  <script src="/static/app.js?v={{ static_revision['app.js'] }}"></script>
 </body>
 </html>

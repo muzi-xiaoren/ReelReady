@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -51,6 +52,11 @@ def _filesize(value: int | None) -> str:
 templates.env.filters["when"] = _when
 templates.env.filters["filesize"] = _filesize
 templates.env.globals["version"] = __version__
+# Compute once at startup so local UI updates also invalidate browser caches.
+templates.env.globals["static_revision"] = {
+    name: hashlib.sha256((config.STATIC_DIR / name).read_bytes()).hexdigest()[:12]
+    for name in ('style.css', 'app.js')
+}
 
 
 def toast(message: str, level: str = "ok", response: Response | None = None, **extra_headers: str) -> Response:

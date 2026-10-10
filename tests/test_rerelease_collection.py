@@ -1,17 +1,18 @@
+import sqlite3
 import tempfile
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from reelready import db
+from reelready import config, db
 from reelready.models import Event, Movie, MovieStatus, now
 from reelready.services.collector import _collect_douban, _collect_tmdb, _new_candidate
-from reelready.services.movies import apply_douban, apply_tmdb, same_douban_movie
+from reelready.services.movies import apply_douban, apply_tmdb, restore_primary_year, same_douban_movie
 from reelready.settings import AppSettings, load_settings
 from reelready.sources.douban import DoubanClient, DoubanMovie
 from reelready.sources.tmdb import TMDBClient, TMDBError, TMDBMovie
@@ -202,9 +203,79 @@ class RereleaseCollectionTests(unittest.TestCase):
         finally:
             client.close()
 
+    def test_startup_repairs_legacy_year_and_preserves_movie_state_with_backup(self):
+        with db.session_scope() as session:
+            movie = Movie(title='釜山行', year=date.today().year, source='tmdb', tmdb_id=396535,
+                          status=MovieStatus.COMPLETED, downloaded={'title': 'existing download'},
+                          details={'release_date': '2016-07-20', 'releases': [
+                              {'date': '2016-07-20', 'region': 'KR'},
+                              {'date': self.recent, 'region': 'IT'},
+                          ]})
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+        directory = Path(self.temp.name)
+        with patch.object(db, 'engine', self.engine), patch.object(config, 'DATA_DIR', directory), patch.object(config, 'DB_PATH', directory / 'test.db'):
+            db.init_db()
+            db.init_db()  # Idempotent; a second start must not create another backup.
+        saved = self.movies()[0]
+        self.assertEqual(saved.id, movie_id)
+        self.assertEqual(saved.year, 2016)
+        self.assertEqual(saved.status, MovieStatus.COMPLETED)
+        self.assertEqual(saved.downloaded, {'title': 'existing download'})
+        self.assertTrue(saved.details['is_rerelease'])
+        self.assertEqual(saved.details['collection_releases'], [{'date': self.recent, 'region': 'IT'}])
+        backups = list(directory.glob('before-movie-year-fix-*.db'))
+        self.assertEqual(len(backups), 1)
+        with sqlite3.connect(backups[0]) as backup:
+            self.assertEqual(backup.execute('SELECT year FROM movies WHERE id=?', (movie_id,)).fetchone()[0], date.today().year)
+        self.assertEqual(self.events(), [])
+        client = TestClient(create_app())
+        try:
+            page = client.get('/movies?tab=completed')
+            self.assertIn('2016', page.text)
+            self.assertIn('釜山行', page.text)
+        finally:
+            client.close()
+
+    def test_refresh_detaches_legacy_wrong_douban_link_and_restores_tmdb_title(self):
+        from reelready.services.movie_metadata import refresh_metadata
+        with db.session_scope() as session:
+            movie = Movie(title='Wrong Short Film', year=2026, source='tmdb',
+                          tmdb_id=396535, douban_id='wrong', imdb_id='tt5700672',
+                          details={'aliases': ['Wrong Alias'], 'pubdates': ['2025'], 'durations': ['19分钟'], 'is_rerelease': True})
+            session.add(movie)
+            session.flush()
+            movie_id = movie.id
+        douban_context = MagicMock()
+        douban_context.__enter__.return_value = self.douban
+        self.douban.detail.return_value = DoubanMovie('wrong', 'Wrong Short Film', year=2025, imdb_id='tt1111111')
+        with patch('reelready.services.movie_metadata.make_douban', return_value=douban_context), patch('reelready.services.movie_metadata.make_tmdb', return_value=self.tmdb), patch('reelready.services.pt.revalidate_cached_candidates'):
+            refresh_metadata(movie_id)
+        saved = self.movies()[0]
+        self.assertEqual(saved.title, '釜山行')
+        self.assertEqual(saved.year, 2016)
+        self.assertIsNone(saved.douban_id)
+        self.assertEqual(saved.details['sources'], ['TMDB'])
+        self.assertTrue(saved.details['is_rerelease'])
+        for field in ('aliases', 'pubdates', 'durations'):
+            self.assertNotIn(field, saved.details)
+
 
 
 class MovieIdentityTests(unittest.TestCase):
+    def test_legacy_repair_requires_a_valid_cached_tmdb_theatrical_date(self):
+        for tmdb_id, year, primary, releases in (
+            (None, 2026, '2016-07-20', [{'date': '2016-07-20'}]),
+            (396535, 2026, 'not-a-date', [{'date': 'not-a-date'}]),
+            (396535, 2026, '2016-07-20', []),
+            (396535, 2016, '2026-07-20', [{'date': '2026-07-20'}]),
+        ):
+            with self.subTest(tmdb_id=tmdb_id, year=year, primary=primary):
+                movie = Movie(title='电影', tmdb_id=tmdb_id, year=year, details={'release_date': primary, 'releases': releases})
+                self.assertFalse(restore_primary_year(movie))
+                self.assertEqual(movie.year, year)
+
     def test_douban_search_rejects_similar_short_film_even_with_close_year(self):
         with DoubanClient() as client:
             with patch.object(client, 'search', return_value=[

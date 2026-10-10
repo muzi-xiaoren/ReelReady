@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/icons.html" import icon %}
+{% from "partials/setting_field.html" import setting_field %}
 {% block title %}设置 · ReelReady{% endblock %}
 {% block content %}
 <div class="page-head">
@@ -21,54 +22,13 @@
     <section class="panel settings-section" id="{{ key }}">
       <h2>{{ label }}</h2>
       <form data-autosave="/settings/{{ key }}">
+        {% if key == "collect" %}
+          {% include "partials/collection_settings.html" %}
+        {% else %}
         <div class="form-grid">
           {% for f in fields %}
           {% if not (key == 'rules' and f.kind == 'bool') %}
-          <div class="field {{ 'bool' if f.kind == 'bool' }} {{ 'wide' if f.kind in ('list', 'regions', 'resolutions') or f.name in ('user_agent', 'url', 'proxy_url', 'api_key') }} {{ 'rule-preference' if key == 'rules' and f.kind == 'bool' }}"
-               {% if f.custom_only %}data-custom-only{% endif %}>
-            {% if f.kind == "bool" %}
-              <label class="switch">
-                <input type="checkbox" name="{{ f.name }}" {{ "checked" if f.value }}>
-                <span class="track"></span>
-                <span>{{ f.title }}{% if f.help %}<span class="help" style="display:block;margin-top:2px">{{ f.help }}</span>{% endif %}</span>
-              </label>
-            {% else %}
-              <label class="title" for="{{ key }}-{{ f.name }}">{{ f.title }}</label>
-              {% if f.kind in ('regions', 'resolutions') %}
-                <input type="hidden" name="{{ f.name }}" value="{{ f.value | join(',') }}" data-choice-value>
-                {% if f.kind == 'regions' %}<input type="hidden" name="{{ f.name }}_order" data-choice-order>{% endif %}
-                <div class="{{ 'region-options' if f.kind == 'regions' else 'resolution-order' }}" data-choice-list>
-                  {% for value, text in f.choices.items() %}
-                  <div class="setting-choice {{ 'resolution-row' if f.kind == 'resolutions' }}" data-choice="{{ value }}">
-                    {% if f.kind == 'regions' %}<span class="region-drag" draggable="true" title="拖动排序" aria-label="拖动 {{ text }} 排序">⠿</span>{% endif %}
-                    <label class="switch"><input type="checkbox" data-setting-choice {{ 'checked' if value in f.value }} aria-label="{{ f.title }}：{{ text }}"><span class="track"></span><span>{{ text }}{% if f.kind == 'regions' %}<small>{{ value }}</small>{% endif %}</span></label>
-                    <div class="order-actions"><button class="btn btn-sm btn-icon" type="button" data-order="up" aria-label="上移 {{ text }}">↑</button><button class="btn btn-sm btn-icon" type="button" data-order="down" aria-label="下移 {{ text }}">↓</button></div>
-                  </div>
-                  {% endfor %}
-                </div>
-              {% elif f.kind == "choice" %}
-                <select id="{{ key }}-{{ f.name }}" name="{{ f.name }}" {% if key == "email" and f.name == "provider" %}data-email-provider{% endif %}>
-                  {% for value, text in f.choices.items() %}
-                  <option value="{{ value }}" {{ "selected" if value == f.value }}>{{ text }}</option>
-                  {% endfor %}
-                </select>
-              {% elif f.kind == "secret" %}
-                <div class="copy-field">
-                  <input type="password" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" autocomplete="new-password"
-                         value="{{ f.value }}" data-secret-mask="{{ 'true' if f.value else 'false' }}" placeholder="{{ '已设置，留空保持不变' if f.value else '未设置' }}">
-                  <button class="btn btn-icon" type="button" data-reveal="#{{ key }}-{{ f.name }}" title="显示">{{ icon("eye") }}</button>
-                </div>
-                <div class="help" data-secret-status>{{ '已填写 · 输入新值可替换，留空保持不变' if f.value else '尚未填写' }}</div>
-              {% elif f.kind == "optional_int" %}
-                <input type="number" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value if f.value is not none else '' }}" min="1" max="36500" step="1" placeholder="永久保留">
-              {% elif f.kind in ("int", "float") %}
-                <input type="number" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}" step="{{ '1' if f.kind == 'int' else 'any' }}">
-              {% else %}
-                <input type="text" id="{{ key }}-{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}">
-              {% endif %}
-              {% if f.help %}<div class="help">{{ f.help }}</div>{% endif %}
-            {% endif %}
-          </div>
+          {{ setting_field(key, f) }}
           {% endif %}
           {% endfor %}
           {% if key == 'rules' %}
@@ -77,6 +37,7 @@
           </div>
           {% endif %}
         </div>
+        {% endif %}
         {% if key == 'rules' %}<div class="help rules-explanation">符合全部条件的资源优先按做种人数排序；人数相同时再比较清晰度、中字和 HDR。无法识别清晰度的资源不会自动下载。</div>{% endif %}
         <div class="form-actions">
           <button class="autosave-status" type="button" data-save-status role="status" aria-live="polite">已保存</button>
