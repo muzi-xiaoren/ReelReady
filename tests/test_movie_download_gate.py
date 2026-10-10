@@ -106,3 +106,66 @@ class MovieDownloadGateTests(unittest.TestCase):
         verified.imdb_source = 'search'
         self.assertFalse(matches_movie(verified, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
         self.assertFalse(matches_movie(self.hit('Another Movie 2026 1080p WEB-DL'), imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+
+    def test_subtitle_year_accepts_matching_chinese_or_english_main_title(self):
+        for title in ('奥德赛 2160p WEB-DL', 'The Odyssey 2160p WEB-DL'):
+            for subtitle in ('2026', '上映年份：2026年 · 中字', '[2026-07-17]'):
+                with self.subTest(title=title, subtitle=subtitle):
+                    hit = self.hit(title, subtitle, imdb_id=None)
+                    best, _ = rank_for_movie([hit], self.rules, self.query, '')
+                    self.assertIsNotNone(best)
+
+    def test_subtitle_year_keeps_existing_one_year_tolerance(self):
+        for year in (2025, 2027):
+            hit = self.hit('奥德赛 2160p WEB-DL', f'年份：{year}', imdb_id=None)
+            self.assertTrue(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+
+    def test_inferred_imdb_still_requires_year_evidence(self):
+        hit = self.hit('奥德赛 2160p WEB-DL', '2026')
+        hit.imdb_source = 'search'
+        self.assertTrue(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+        hit.subtitle = ''
+        self.assertFalse(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+        hit.imdb_source = 'metadata'
+        self.assertTrue(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+
+    def test_subtitle_year_cannot_override_title_year_or_wrong_main_title(self):
+        for title, subtitle in (
+            ('奥德赛 2020 2160p WEB-DL', '2026'),
+            ('奥德赛2020 2160p WEB-DL', '2026'),
+            ('另一部电影 2160p WEB-DL', '奥德赛 2026'),
+            ('奥德赛2 2160p WEB-DL', '奥德赛 2026'),
+            ('新奥德赛 2160p WEB-DL', '2026'),
+            ('奥德赛外传 2160p WEB-DL', '2026'),
+            ('Another Movie 2160p WEB-DL', 'The Odyssey 2026'),
+            ('2160p WEB-DL', '奥德赛 2026'),
+        ):
+            with self.subTest(title=title):
+                hit = self.hit(title, subtitle, imdb_id=None)
+                self.assertFalse(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+        hit = self.hit('奥德赛2026 2160p WEB-DL', '', imdb_id=None)
+        self.assertTrue(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+
+    def test_missing_wrong_ambiguous_or_identifier_year_is_rejected(self):
+        for subtitle in ('', '中字', '2020', '20260', 'x2026', '2026MB', '2020 / 2026'):
+            with self.subTest(subtitle=subtitle):
+                hit = self.hit('奥德赛 2160p WEB-DL', subtitle, imdb_id=None)
+                self.assertFalse(matches_movie(hit, imdb_id=self.query.imdb_id, titles=self.query.titles, year=2026))
+
+    def test_subtitle_numeric_movie_title_is_not_a_release_year(self):
+        for subtitle, expected in (('银翼杀手2049 / Blade Runner 2049', False), ('银翼杀手2049 / Blade Runner 2049 · 2017', True)):
+            hit = self.hit('Blade Runner 2049 2160p BluRay', subtitle, imdb_id=None)
+            self.assertEqual(matches_movie(hit, imdb_id=None, titles=['银翼杀手2049', 'Blade Runner 2049'], year=2017), expected)
+        hit = self.hit('1917 1080p BluRay', '1917', imdb_id=None)
+        self.assertFalse(matches_movie(hit, imdb_id=None, titles=['1917'], year=2019))
+        hit.subtitle = '1917 · 上映年份2019年'
+        self.assertTrue(matches_movie(hit, imdb_id=None, titles=['1917'], year=2019))
+
+    def test_subtitle_year_does_not_bypass_extras_cam_or_release_gate(self):
+        for subtitle in ('2026 制作特辑', '2026 屏摄 枪版'):
+            hit = self.hit('奥德赛 2160p WEB-DL', subtitle, imdb_id=None)
+            self.assertIsNone(rank_for_movie([hit], self.rules, self.query, '')[0])
+        hit = self.hit('奥德赛 2160p WEB-DL', '2026', imdb_id=None)
+        best, ranked = rank_for_movie([hit], self.rules, self.query, '等待上线确认')
+        self.assertIsNone(best)
+        self.assertIn('等待上线确认', ranked[0].reason)

@@ -182,6 +182,31 @@ def _normalize(text: str) -> str:
     return _NORMALIZE.sub(" ", text.lower()).strip()
 
 
+def _contains_title(text: str, titles: list[str]) -> bool:
+    padded = f" {text} "
+    return any(
+        title and (
+            f" {title} " in padded
+            or (re.search(r"[一-鿿]", title) and title.replace(" ", "") in text.replace(" ", ""))
+        )
+        for title in titles
+    )
+
+
+def _subtitle_year_matches(subtitle: str, titles: list[str], year: int) -> bool:
+    text = _normalize(subtitle)
+    # Numeric film names such as 1917 / Blade Runner 2049 are not release years.
+    for title in titles:
+        if title:
+            text = re.sub(r'(?<![a-z0-9])' + re.escape(title) + r'(?![a-z0-9])', ' ', text)
+    years = {
+        int(match.group())
+        for match in re.finditer(r'(?<![a-z0-9])(?:19|20)\d{2}(?![a-z0-9])', text)
+    }
+    # Multiple different years are ambiguous; do not cherry-pick a matching number.
+    return len(years) == 1 and abs(next(iter(years)) - year) <= 1
+
+
 def matches_movie(
     torrent: TorrentInfo,
     *,
@@ -203,7 +228,7 @@ def matches_movie(
     title_spans = []
     for title in normalized_titles:
         title_spans.extend(match.span() for match in re.finditer(r'(?<![a-z0-9])' + re.escape(title) + r'(?![a-z0-9])', name))
-    years = [match for match in re.finditer(r'\b(?:19|20)\d{2}\b', name) if not any(start <= match.start() < end for start, end in title_spans)]
+    years = [match for match in re.finditer(r'(?<![a-z0-9])(?:19|20)\d{2}(?![a-z0-9])', name) if not any(start <= match.start() < end for start, end in title_spans)]
     title_year = years[0] if years else None
     verified_imdb = bool(imdb_id and torrent.imdb_id == imdb_id and torrent.imdb_source != 'search')
     if year and title_year and not verified_imdb and abs(int(title_year.group()) - year) > 1:
@@ -230,12 +255,8 @@ def matches_movie(
         return True
     text = f" {_normalize(torrent.title)} {_normalize(torrent.subtitle)} "
     if year and not title_year:
-        return False
-    for title in titles:
-        norm = _normalize(title)
-        if norm and f" {norm} " in text:
-            return True
-        # CJK titles are not space separated in release names / subtitles.
-        if norm and re.search(r"[一-鿿]", norm) and norm.replace(" ", "") in text.replace(" ", ""):
-            return True
-    return False
+        # A subtitle may supply the year, but may not supply a missing/wrong main title.
+        main_title_matches = any(title and f" {title} " in f" {name} " for title in normalized_titles)
+        if not main_title_matches or not _subtitle_year_matches(torrent.subtitle, normalized_titles, year):
+            return False
+    return _contains_title(text, normalized_titles)
