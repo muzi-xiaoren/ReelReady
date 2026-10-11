@@ -54,6 +54,22 @@ def init_db() -> None:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN metadata_checked_at DATETIME")
     _migrate_site_identity()
     _migrate_movie_years()
+    _migrate_douban_posters()
+
+
+def _migrate_douban_posters() -> None:
+    """Point posters saved as Douban photo pages at the image itself."""
+    import re
+
+    from sqlalchemy import select
+
+    from .models import Movie
+
+    page = re.compile(r"movie\.douban\.com/photos/photo/(\d+)")
+    with session_scope() as session:
+        for movie in session.scalars(select(Movie).where(Movie.poster_url.like("%movie.douban.com/photos/photo/%"))):
+            if m := page.search(movie.poster_url):
+                movie.poster_url = f"https://img1.doubanio.com/view/photo/m_ratio_poster/public/p{m.group(1)}.jpg"
 
 
 def _migrate_movie_years() -> None:

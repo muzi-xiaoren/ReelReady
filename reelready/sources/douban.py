@@ -64,12 +64,13 @@ def _rating(item: dict[str, Any]) -> tuple[float | None, int | None]:
 
 
 def _cover(item: dict[str, Any]) -> str | None:
-    cover = item.get("cover")
-    if isinstance(cover, dict) and cover.get("url"):
-        return cover["url"]
+    # Detail responses put the photo's web page in cover.url; pic holds the poster image.
     pic = item.get("pic")
-    if isinstance(pic, dict):
+    if isinstance(pic, dict) and (pic.get("large") or pic.get("normal")):
         return pic.get("large") or pic.get("normal")
+    cover = item.get("cover")
+    if isinstance(cover, dict) and "doubanio.com" in str(cover.get("url") or ""):
+        return cover["url"]
     return item.get("cover_url")
 
 

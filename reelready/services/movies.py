@@ -2,6 +2,7 @@
 
 import logging
 import calendar
+import re
 from datetime import date
 
 import httpx
@@ -27,6 +28,9 @@ _STATUS_PRIORITY = {
     MovieStatus.MONITORING: 1,
     MovieStatus.CANDIDATE: 0,
 }
+
+# Douban pubdates look like "2026-09-04(中国大陆)"; a bare year is no evidence of a shared release.
+_FULL_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 class AddMovieError(Exception):
@@ -201,8 +205,27 @@ def same_douban_movie(movie: Movie, item: DoubanMovie) -> bool:
     year = int(release[:4]) if release[:4].isdigit() else movie.year
     titles = [movie.title, movie.original_title or '', *((movie.details or {}).get('aliases') or [])]
     return matching_titles(titles, [item.title, item.original_title or '', *(item.details.get('aliases') or [])]) and (
-        year is None or item.year is None or abs(year - item.year) <= 1
+        year is None or item.year is None or abs(year - item.year) <= 1 or _shared_release_date(movie, item)
     )
+
+
+def _shared_release_date(movie: Movie, item: DoubanMovie) -> bool:
+    """Douban and TMDB may date a festival cut years apart, but list the same release day."""
+    details = movie.details or {}
+    tmdb_dates = {
+        entry.get('date') for entry in [*(details.get('releases') or []), *(details.get('collection_releases') or [])]
+        if isinstance(entry, dict)
+    }
+    douban_dates = {m.group(0) for value in item.details.get('pubdates') or [] if (m := _FULL_DATE.match(str(value)))}
+    return bool(tmdb_dates & douban_dates)
+
+
+def find_unlinked_douban_match(session: Session, item: DoubanMovie) -> Movie | None:
+    """Find a record not yet linked to Douban that the identity check accepts as ``item``."""
+    for movie in session.scalars(select(Movie).where(Movie.douban_id.is_(None)).order_by(Movie.id)):
+        if same_douban_movie(movie, item):
+            return movie
+    return None
 
 
 def link_ids(session: Session, movie: Movie, tmdb: TMDBClient | None, douban: DoubanClient) -> Movie:
@@ -354,7 +377,7 @@ def _fetch_new(
 
 
 def upsert_candidate_douban(session: Session, item: DoubanMovie) -> tuple[Movie, bool]:
-    existing = find_existing(session, douban_id=item.id, imdb_id=item.imdb_id)
+    existing = find_existing(session, douban_id=item.id, imdb_id=item.imdb_id) or find_unlinked_douban_match(session, item)
     if existing is not None:
         existing = assign_ids(session, existing, douban_id=item.id, imdb_id=item.imdb_id)
         existing.douban_rating = item.rating
