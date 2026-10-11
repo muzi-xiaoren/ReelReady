@@ -63,7 +63,7 @@ def _jobs_view() -> list[dict]:
                 "name": job.name,
                 "label": job.label,
                 "last_run": last_run,
-                "next_run": next_run(job, settings, last_run),
+                "next_run": next_run(job, settings, last_run, state),
                 "status": state.last_status if state else None,
                 "message": state.last_message if state else None,
                 "running": scheduler.running == job.label,

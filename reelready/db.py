@@ -52,6 +52,11 @@ def init_db() -> None:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN details JSON NOT NULL DEFAULT '{}'")
         if "metadata_checked_at" not in columns:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN metadata_checked_at DATETIME")
+        job_columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(job_states)")}
+        if "retry_count" not in job_columns:
+            connection.exec_driver_sql("ALTER TABLE job_states ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")
+        if "retry_at" not in job_columns:
+            connection.exec_driver_sql("ALTER TABLE job_states ADD COLUMN retry_at DATETIME")
     _migrate_site_identity()
     _migrate_movie_years()
     _migrate_douban_posters()

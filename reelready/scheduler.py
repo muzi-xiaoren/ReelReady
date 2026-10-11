@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 TICK_SECONDS = 30
 STARTUP_DELAY_SECONDS = 10
 MAX_PENDING_REQUESTS = 64
+DIGEST_RETRY_MINUTES = (5, 15, 30)
 
 
 @dataclass(frozen=True)
@@ -47,21 +48,25 @@ JOBS: dict[str, Job] = {
 }
 
 
-def _is_due(job: Job, settings: AppSettings, last_run: datetime | None, current: datetime) -> bool:
+def _is_due(job: Job, settings: AppSettings, last_run: datetime | None, current: datetime, state: JobState | None = None) -> bool:
     if job.interval is None:
         slot = current.replace(hour=settings.email.digest_hour % 24, minute=0, second=0)
-        return current >= slot and (last_run is None or last_run < slot)
+        return (current >= slot and (last_run is None or last_run < slot)) or (
+            job.name == 'digest' and state is not None and state.retry_at is not None and current >= state.retry_at
+        )
     if last_run is None:
         return True
     return current - last_run >= timedelta(hours=max(job.interval(settings), 0.1))
 
 
-def next_run(job: Job, settings: AppSettings, last_run: datetime | None) -> datetime | None:
+def next_run(job: Job, settings: AppSettings, last_run: datetime | None, state: JobState | None = None) -> datetime | None:
     current = now()
     if job.interval is None:
         slot = current.replace(hour=settings.email.digest_hour % 24, minute=0, second=0)
         if last_run is not None and last_run >= slot:
             slot += timedelta(days=1)
+        if job.name == 'digest' and state is not None and state.retry_at is not None:
+            return min(slot, state.retry_at)
         return slot
     if last_run is None:
         return current
@@ -125,7 +130,7 @@ class Scheduler:
     def _run_due(self) -> None:
         settings = load_settings()
         with session_scope() as session:
-            last_runs = {s.name: s.last_run_at for s in session.query(JobState)}
+            states = {s.name: s for s in session.query(JobState)}
         current = now()
         for job in JOBS.values():
             if self._stop.is_set():
@@ -133,7 +138,8 @@ class Scheduler:
             with self._request_lock:
                 if self._request_key(job.name, None) in self._pending_requests:
                     continue
-            if _is_due(job, settings, last_runs.get(job.name), current):
+            state = states.get(job.name)
+            if _is_due(job, settings, state.last_run_at if state else None, current, state):
                 self._execute(job, None, record=True)
 
     def _execute(self, job: Job, movie_ids: list[int] | None, record: bool) -> None:
@@ -164,10 +170,29 @@ class Scheduler:
         if record:
             with session_scope() as session:
                 state = session.get(JobState, job.name) or JobState(name=job.name)
+                if job.name == 'digest':
+                    _record_digest_retry(state, settings, status, now())
                 state.last_run_at = now()
                 state.last_status = status
                 state.last_message = message
                 session.add(state)
+
+
+def _record_digest_retry(state: JobState, settings: AppSettings, status: str, current: datetime) -> None:
+    """Persist the retry budget so a container restart cannot reset it."""
+    slot = current.replace(hour=settings.email.digest_hour % 24, minute=0, second=0)
+    new_day = current >= slot and (state.last_run_at is None or state.last_run_at < slot)
+    if new_day or state.last_run_at is None:
+        state.retry_count = 0
+    elif state.retry_at is not None:
+        state.retry_count = (state.retry_count or 0) + 1
+    if status == 'ok' or not settings.email.enabled:
+        state.retry_count = 0
+        state.retry_at = None
+    elif (state.retry_count or 0) < len(DIGEST_RETRY_MINUTES):
+        state.retry_at = current + timedelta(minutes=DIGEST_RETRY_MINUTES[state.retry_count or 0])
+    else:
+        state.retry_at = None
 
 
 scheduler = Scheduler()
