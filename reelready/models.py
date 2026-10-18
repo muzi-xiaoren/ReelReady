@@ -15,6 +15,7 @@ class MovieStatus(StrEnum):
     MONITORING = "monitoring"  # approved, being checked and searched on PT sites
     COMPLETED = "completed"  # torrent handed to the downloader
     IGNORED = "ignored"  # removed by the user; never collected again
+    WATCHED = "watched"  # already watched; retained without automatic monitoring
 
 
 class Stage(IntEnum):
@@ -31,6 +32,7 @@ STATUS_LABELS = {
     MovieStatus.MONITORING: "监测中",
     MovieStatus.COMPLETED: "已完成",
     MovieStatus.IGNORED: "黑名单",
+    MovieStatus.WATCHED: "已看过",
 }
 
 STAGE_LABELS = {
@@ -50,6 +52,7 @@ class Movie(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     status: Mapped[str] = mapped_column(String(16), default=MovieStatus.CANDIDATE, index=True)
+    watched_from_status: Mapped[str | None] = mapped_column(String(16))
     stage: Mapped[int] = mapped_column(Integer, default=Stage.IN_CINEMA)
     source: Mapped[str] = mapped_column(String(16), default="manual")  # douban / tmdb / manual
 

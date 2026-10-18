@@ -5,7 +5,7 @@
 <div class="page-head">
   <div>
     <h1>影片</h1>
-    <div class="subtitle">收集院线高分片，等它上线网络后自动下载</div>
+    <div class="subtitle">收集近期高分电影，等它上线网络后自动下载</div>
   </div>
   <div class="add-bar">
     <form hx-post="/movies/add" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()">
@@ -48,6 +48,9 @@
   {% elif tab == "completed" %}
     <div class="title">还没有下载过影片</div>
     <div>监测中的影片一旦在 PT 站出现符合要求的资源，就会自动推送到 qBittorrent。</div>
+  {% elif tab == "watched" %}
+    <div class="title">还没有标记看过的影片</div>
+    <div>点击影片上的眼睛按钮标记已看过。保留影片及下载记录，暂停监测和自动下载，随时可以恢复。</div>
   {% else %}
     <div class="title">黑名单是空的</div>
     <div>移入黑名单的影片不会再被收集。</div>

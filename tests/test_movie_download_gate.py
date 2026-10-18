@@ -13,6 +13,9 @@ from reelready.torrent_rules import TorrentInfo, matches_movie, parse
 
 class MovieDownloadGateTests(unittest.TestCase):
     def setUp(self):
+        monitored = patch('reelready.services.pt.monitored_ids', return_value=[19])
+        monitored.start()
+        self.addCleanup(monitored.stop)
         self.query = MovieQuery('tt1234567', '奥德赛', 'The Odyssey', 2026)
         self.rules = TorrentRules()
 

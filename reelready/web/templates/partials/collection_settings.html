@@ -26,6 +26,13 @@
     </div>
   </div>
 
+  <div class="collection-source collection-douban">
+    <div class="collection-source-head">
+      <div><h3><span class="collection-source-dot"></span>近期高分补充</h3><p>补充已退出热映列表的电影，沿用收集范围、豆瓣评分及评价人数门槛；每年每轮最多读取 150 个高分候选。</p></div>
+      {{ collect_field('recent_enabled', '启用补充') }}
+    </div>
+  </div>
+
   <div class="collection-source collection-tmdb">
     <div class="collection-source-head">
       <div><h3><span class="collection-source-dot"></span>TMDB 院线</h3><p>按地区收集院线影片，评分与投票数需同时达标。</p></div>

@@ -1,4 +1,4 @@
-from ..settings import AppSettings
+from ..settings import AppSettings, load_settings
 from ..sources.douban import DoubanClient
 from ..sources.tmdb import TMDBClient
 
@@ -16,4 +16,4 @@ def make_tmdb(settings: AppSettings) -> TMDBClient | None:
 
 
 def make_douban() -> DoubanClient:
-    return DoubanClient()
+    return DoubanClient(proxy=load_settings().network.proxy_url or None)

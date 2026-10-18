@@ -40,6 +40,7 @@ class CollectSettings(BaseModel):
     max_age_months: int = Field(0, ge=0, le=11, title="额外月份", description="年和月相加：0 年 6 月表示近半年。按上映日期筛选；来源仅提供年份时按年份判断。")
     include_rereleases: bool = _field(False, "收集重映影片", "开启后也收集近期重映的老片，年份仍显示首映年份。关闭仅影响后续收集，已添加的影片保留。")
     douban_enabled: bool = _field(True, "收集豆瓣正在热映")
+    recent_enabled: bool = _field(True, "补充近期高分影片")
     douban_min_rating: float = _field(7.5, "豆瓣最低评分")
     douban_min_votes: int = _field(5000, "豆瓣最少评价人数")
     tmdb_enabled: bool = _field(True, "收集 TMDB 各地区院线")

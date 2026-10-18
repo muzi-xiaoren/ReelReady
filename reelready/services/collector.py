@@ -12,6 +12,7 @@ from .clients import make_douban, make_tmdb
 from .events import add_event
 from .movies import (
     cache_poster,
+    collection_cutoff,
     find_existing,
     link_ids,
     within_collection_window,
@@ -34,6 +35,13 @@ def run_collect(settings: AppSettings) -> str:
                     created += _collect_douban(settings, douban, tmdb)
                 except DoubanError as exc:
                     notes.append(f"豆瓣失败: {exc}")
+            if settings.collect.recent_enabled:
+                try:
+                    recent = _collect_recent(settings, douban, tmdb)
+                    created += recent
+                    notes.append(f"近期高分补充 {recent} 部")
+                except DoubanError as exc:
+                    notes.append(f"近期高分补充失败: {exc}")
             if settings.collect.tmdb_enabled:
                 if tmdb is None:
                     notes.append("未配置 TMDB API Key，跳过 TMDB")
@@ -115,8 +123,17 @@ def _new_candidate(settings: AppSettings, movie_id: int, douban: DoubanClient, t
 
 
 def _collect_douban(settings: AppSettings, douban: DoubanClient, tmdb: TMDBClient | None) -> int:
+    return _collect_douban_items(settings, douban, tmdb, douban.now_showing(), now_showing=True)
+
+
+def _collect_recent(settings: AppSettings, douban: DoubanClient, tmdb: TMDBClient | None) -> int:
+    items = douban.recent_high_rated(collection_cutoff(settings).year, date.today().year, settings.collect.douban_min_rating)
+    return _collect_douban_items(settings, douban, tmdb, items, now_showing=False)
+
+
+def _collect_douban_items(settings: AppSettings, douban: DoubanClient, tmdb: TMDBClient | None, items, *, now_showing: bool) -> int:
     created = 0
-    for item in douban.now_showing():
+    for item in items:
         if item.rating is None or item.rating < settings.collect.douban_min_rating or (item.votes or 0) < settings.collect.douban_min_votes:
             continue
         with session_scope() as session:
@@ -128,10 +145,10 @@ def _collect_douban(settings: AppSettings, douban: DoubanClient, tmdb: TMDBClien
         except DoubanError as exc:
             log.info("Skipping unverified Douban candidate %s: %s", item.id, exc)
             continue
-        if not _douban_qualifies(settings, detail, now_showing=True):
+        if not _douban_qualifies(settings, detail, now_showing=now_showing):
             continue
         detail.details['is_rerelease'] = not within_collection_window(settings, detail.year, detail.release_date)
-        detail.details['collection_now_showing'] = True
+        detail.details['collection_now_showing'] = now_showing
         with session_scope() as session:
             movie, is_new = upsert_candidate_douban(session, detail)
             movie_id = movie.id

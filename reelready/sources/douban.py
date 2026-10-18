@@ -2,6 +2,7 @@
 
 import re
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -135,8 +136,36 @@ class DoubanClient:
             if not items or start >= int(data.get("total") or 0):
                 return movies
 
+    def recent_high_rated(self, first_year: int, last_year: int, min_rating: float) -> Iterator[DoubanMovie]:
+        """Read bounded discovery pages; exact dates are checked from details."""
+        import json
+
+        seen = set()
+        for year in range(last_year, first_year - 1, -1):
+            for start in range(0, 150, 50):
+                data = self._get('/movie/recommend', start=start, count=50, sort='S',
+                                 tags=str(year), selected_categories=json.dumps({'类型': '电影'}),
+                                 range=f'{min_rating},10')
+                items = data.get('items') or []
+                new_ids = set()
+                for item in items:
+                    if item.get('type') not in (None, 'movie') or not item.get('id'):
+                        continue
+                    identity = str(item['id'])
+                    if identity in seen:
+                        continue
+                    seen.add(identity)
+                    new_ids.add(identity)
+                    rating, votes = _rating(item)
+                    yield DoubanMovie(id=identity, title=item.get('title') or '',
+                                      year=_year(item.get('year')), rating=rating, votes=votes,
+                                      cover=_cover(item))
+                if not new_ids or len(items) < 50:
+                    break
+
     def detail(self, douban_id: str) -> DoubanMovie:
         data = self._get(f"/movie/{douban_id}")
+        details = douban_details(data)
         rating, votes = _rating(data)
         vendors = [v.get("title") for v in data.get("vendors") or [] if v.get("title")]
         return DoubanMovie(
@@ -144,7 +173,7 @@ class DoubanClient:
             title=data.get("title") or "",
             original_title=data.get("original_title") or None,
             year=_year(data.get("year")),
-            release_date=data.get("release_date") or None,
+            release_date=details.get("release_date"),
             rating=rating,
             votes=votes,
             cover=_cover(data),
@@ -152,7 +181,7 @@ class DoubanClient:
             vendors=vendors,
             pre_playable_date=data.get("pre_playable_date") or None,
             imdb_id=data.get("imdb_id") or None,
-            details=douban_details(data),
+            details=details,
         )
 
     def search(self, query: str, count: int = 10) -> list[DoubanMovie]:

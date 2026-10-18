@@ -76,6 +76,12 @@
                 hx-confirm="把《{{ movie.title }}》重新放回监测并再次搜索下载？">{{ icon("refresh") }}重新搜索下载</button>
       {% elif movie.status == "ignored" %}
         <button class="btn" hx-post="/movies/{{ movie.id }}/restore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("undo") }}移出黑名单</button>
+      {% elif movie.status == "watched" %}
+        <span class="help">已看过 · 已暂停监测和自动下载</span>
+        <button class="btn" hx-post="/movies/{{ movie.id }}/restore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("undo") }}取消已看过</button>
+      {% endif %}
+      {% if movie.status != "watched" %}
+        <button class="btn" hx-post="/movies/{{ movie.id }}/watched" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("eye") }}已看过</button>
       {% endif %}
       <button class="btn btn-ghost btn-danger" hx-post="/movies/{{ movie.id }}/delete" hx-swap="none"
               hx-confirm="彻底删除《{{ movie.title }}》？删除后它可能被重新收集，不想再看到请用黑名单。">{{ icon("trash") }}删除</button>

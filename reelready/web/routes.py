@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 
 router = APIRouter()
 
-TABS = [MovieStatus.MONITORING, MovieStatus.CANDIDATE, MovieStatus.COMPLETED, MovieStatus.IGNORED]
+TABS = [MovieStatus.MONITORING, MovieStatus.CANDIDATE, MovieStatus.COMPLETED, MovieStatus.WATCHED, MovieStatus.IGNORED]
 
 
 def _render(request: Request, name: str, **context) -> HTMLResponse:
@@ -153,8 +153,11 @@ def movie_add(ref: Annotated[str, Form()]) -> Response:
         with session_scope() as session:
             movie = add_manual(session, ref, settings)
             movie_id, title = movie.id, movie.title
+            watched = movie.status == MovieStatus.WATCHED
     except AddMovieError as exc:
         return toast(str(exc), "error")
+    if watched:
+        return toast(f"《{title}》已在「已看过」中，可在详情中恢复", HX_Redirect=f"/movies/{movie_id}")
     scheduler.trigger("check", [movie_id])
     scheduler.trigger("pt_scan", [movie_id])
     return toast(f"已添加《{title}》", HX_Redirect=f"/movies/{movie_id}")
@@ -186,15 +189,36 @@ def movie_ignore(movie_id: int) -> Response:
     return toast(f"《{title}》已移入黑名单，之后不会再被收集")
 
 
+@router.post("/movies/{movie_id}/watched")
+def movie_watched(movie_id: int) -> Response:
+    from ..services.pt import _download_lock
+
+    with _download_lock, session_scope() as session:
+        movie = session.get(Movie, movie_id)
+        if movie is None:
+            raise HTTPException(404)
+        if movie.status != MovieStatus.WATCHED:
+            movie.watched_from_status = movie.status
+            movie.status = MovieStatus.WATCHED
+        title = movie.title
+    return toast(f"《{title}》已标记为看过，暂停监测和自动下载")
+
+
 @router.post("/movies/{movie_id}/restore")
 def movie_restore(movie_id: int) -> Response:
     with session_scope() as session:
         movie = session.get(Movie, movie_id)
         if movie is None:
             raise HTTPException(404)
-        movie.status = MovieStatus.CANDIDATE if movie.approved_at is None else MovieStatus.MONITORING
-        if movie.stage >= Stage.DOWNLOADED:
-            movie.status = MovieStatus.COMPLETED
+        if movie.status == MovieStatus.WATCHED and movie.watched_from_status in (
+            MovieStatus.CANDIDATE, MovieStatus.MONITORING, MovieStatus.COMPLETED, MovieStatus.IGNORED
+        ):
+            movie.status = movie.watched_from_status
+        else:
+            movie.status = MovieStatus.CANDIDATE if movie.approved_at is None else MovieStatus.MONITORING
+            if movie.stage >= Stage.DOWNLOADED:
+                movie.status = MovieStatus.COMPLETED
+        movie.watched_from_status = None
         title, label = movie.title, STATUS_LABELS[MovieStatus(movie.status)]
     return toast(f"《{title}》已恢复到「{label}」")
 

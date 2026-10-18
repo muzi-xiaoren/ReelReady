@@ -144,6 +144,8 @@ def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> st
             hits: list[TorrentInfo] = []
             errors: list[str] = []
             for site in list(sites):
+                if target.id not in monitored_ids([target.id]):
+                    break
                 if not first:
                     time.sleep(delay)
                 first = False
@@ -218,7 +220,7 @@ def download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: Torr
     with _download_lock:
         with session_scope() as session:
             movie = session.get(Movie, movie_id)
-            if movie is None or movie.status == MovieStatus.COMPLETED:
+            if movie is None or movie.status in (MovieStatus.COMPLETED, MovieStatus.WATCHED, MovieStatus.IGNORED):
                 return False
         return _download(settings, movie_id, site, torrent)
 
@@ -279,6 +281,8 @@ def download_candidate(settings: AppSettings, movie_id: int, index: int, *, site
             raise SiteError("找不到这个种子，请重新搜索")
         if movie.status == MovieStatus.COMPLETED:
             raise SiteError('该影片已提交过下载，请在 qBittorrent 中查看，无需重复下载')
+        if movie.status in (MovieStatus.WATCHED, MovieStatus.IGNORED):
+            raise SiteError('请先恢复影片，再进行下载')
         candidates = movie.last_pt_candidates or []
         if site_id is not None and torrent_id is not None:
             data = next((dict(item) for item in candidates if item.get('site_id') == site_id and str(item.get('torrent_id')) == torrent_id), None)

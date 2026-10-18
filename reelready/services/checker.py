@@ -55,7 +55,7 @@ def run_check(settings: AppSettings, movie_ids: list[int] | None = None) -> str:
 def _check_one(settings: AppSettings, movie_id: int, tmdb: TMDBClient | None, douban: DoubanClient) -> bool:
     with session_scope() as session:
         movie = session.get(Movie, movie_id)
-        if movie is None:
+        if movie is None or movie.status != MovieStatus.MONITORING:
             return False
         if not (movie.tmdb_id and movie.douban_id):
             movie = link_ids(session, movie, tmdb, douban)

@@ -36,11 +36,15 @@
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}</button>
     {% elif m.status == "completed" %}
       <a class="btn btn-sm" href="/movies/{{ m.id }}">{{ icon("eye") }}详情</a>
-    {% elif m.status == "ignored" %}
+    {% elif m.status in ("ignored", "watched") %}
       <button class="btn btn-sm" hx-post="/movies/{{ m.id }}/restore"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("undo") }}恢复</button>
       <button class="btn btn-sm btn-icon btn-danger" title="彻底删除（之后可能被重新收集）"
               hx-post="/movies/{{ m.id }}/delete" hx-confirm="彻底删除《{{ m.title }}》？删除后它可能被重新收集。">{{ icon("trash") }}</button>
+    {% endif %}
+    {% if m.status != "watched" %}
+      <button class="btn btn-sm btn-icon" title="已看过（暂停监测和自动下载）" hx-post="/movies/{{ m.id }}/watched"
+              hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("eye") }}</button>
     {% endif %}
   </div>
 </article>

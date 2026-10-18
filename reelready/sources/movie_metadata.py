@@ -1,5 +1,6 @@
 """Normalize public movie information; keep theatrical and digital dates separate."""
 import unicodedata
+import re
 from urllib.parse import urlsplit
 
 
@@ -52,8 +53,9 @@ def douban_details(data: dict) -> dict:
     pubdates = data.get('pubdate') or data.get('pubdates') or []
     if isinstance(pubdates, str):
         pubdates = [pubdates]
+    dates = [match.group(0) for value in pubdates if (match := re.match(r'\d{4}-\d{2}-\d{2}', str(value)))]
     return {
-        'release_date': data.get('release_date'), 'pubdates': pubdates,
+        'release_date': data.get('release_date') or (min(dates) if dates else None), 'pubdates': pubdates,
         'genres': data.get('genres') or [], 'countries': data.get('countries') or [],
         'languages': data.get('languages') or [], 'durations': data.get('durations') or [],
         'directors': [person(p) for p in data.get('directors') or []],

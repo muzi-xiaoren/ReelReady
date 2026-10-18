@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 # When two records turn out to be the same movie, the one in the "stronger" list survives.
 _STATUS_PRIORITY = {
+    MovieStatus.WATCHED: 4,
     MovieStatus.IGNORED: 3,
     MovieStatus.COMPLETED: 2,
     MovieStatus.MONITORING: 1,
@@ -329,7 +330,8 @@ def add_manual(session: Session, ref: str, settings: AppSettings) -> Movie:
                 session, douban_id=movie.douban_id, tmdb_id=movie.tmdb_id, imdb_id=movie.imdb_id
             )
             if existing is not None:
-                approve(existing)
+                if existing.status not in (MovieStatus.WATCHED, MovieStatus.COMPLETED):
+                    approve(existing)
                 return existing
             session.add(movie)
             session.flush()
@@ -339,7 +341,7 @@ def add_manual(session: Session, ref: str, settings: AppSettings) -> Movie:
             tmdb.close()
 
     # Linking may have merged this into a record the user had ignored; a manual add wins.
-    if movie.status != MovieStatus.COMPLETED:
+    if movie.status not in (MovieStatus.COMPLETED, MovieStatus.WATCHED):
         approve(movie)
     add_event(
         session, "added", f"《{movie.title}》已加入监测", ratings_text(movie), movie_id=movie.id, notify=False
