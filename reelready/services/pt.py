@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 # How many search hits are kept on the movie for display / manual download.
 KEEP_CANDIDATES = 30
+MAX_IDENTITY_CHECKS = 10
 _download_lock = threading.Lock()
 
 
@@ -35,19 +36,33 @@ class _Target:
 
 
 def release_wait_reason(movie: Movie) -> str:
-    if movie.streaming:
+    # A buy listing can be a preorder. Subscription/rental evidence is stronger.
+    buy_only = bool(movie.streaming) and all(str(item).endswith('(买)') for item in movie.streaming)
+    if movie.streaming and not buy_only:
         return ""
     if movie.digital_date:
         try:
             if date.fromisoformat(movie.digital_date) <= date.today():
                 return ""
-            return f"等待上线确认：数字版预计 {movie.digital_date}，暂无可看平台"
+            return f"等待上线确认：数字版预计 {movie.digital_date}，购买记录可能是预售" if buy_only else f"等待上线确认：数字版预计 {movie.digital_date}，暂无可看平台"
         except ValueError:
             pass
-    return "等待上线确认：暂无有效数字版日期或可看平台"
+    return "等待上线确认：仅有购买记录，尚未排除预售" if buy_only else "等待上线确认：暂无有效数字版日期或可看平台"
 
 
-def rank_for_movie(hits: list[TorrentInfo], rules, query: MovieQuery, release_wait: str):
+def identity_rejection(torrent: TorrentInfo, query: MovieQuery) -> str:
+    if torrent.imdb_id and query.imdb_id and torrent.imdb_id != query.imdb_id:
+        return f'影片不匹配：种子 IMDb {torrent.imdb_id}，目标 {query.imdb_id}（同名影片）'
+    if torrent.identity_error:
+        return torrent.identity_error
+    if not query.imdb_id:
+        return '影片身份未核实：目标电影缺少 IMDb，暂停自动下载'
+    if not torrent.imdb_id or torrent.imdb_source not in ('metadata', 'detail'):
+        return '影片身份未核实：缺少独立 IMDb，需核对种子详情'
+    return ''
+
+
+def rank_for_movie(hits: list[TorrentInfo], rules, query: MovieQuery, release_wait: str, *, require_identity: bool = True):
     _, ranked = pick_best(hits, rules)
     for item in ranked:
         if not matches_movie(item.torrent, imdb_id=query.imdb_id, titles=query.titles, year=query.year):
@@ -59,9 +74,46 @@ def rank_for_movie(hits: list[TorrentInfo], rules, query: MovieQuery, release_wa
         elif item.ok and release_wait:
             item.ok = False
             item.reason = release_wait
+        if require_identity:
+            reason = identity_rejection(item.torrent, query)
+            mismatch = item.torrent.imdb_id and query.imdb_id and item.torrent.imdb_id != query.imdb_id
+            if reason and (item.ok or mismatch):
+                item.ok = False
+                item.reason = reason
     accepted = [item for item in ranked if item.ok]
     rejected = [item for item in ranked if not item.ok]
     return (accepted[0] if accepted else None), accepted + rejected
+
+
+def verify_candidates(hits: list[TorrentInfo], sites: list[BaseSite], settings: AppSettings, query: MovieQuery) -> None:
+    if not query.imdb_id:
+        return
+    _, candidates = rank_for_movie(hits, settings.rules, query, '', require_identity=False)
+    checked = 0
+    for item in candidates:
+        if not item.ok:
+            continue
+        torrent = item.torrent
+        if not identity_rejection(torrent, query):
+            break
+        if torrent.imdb_id and torrent.imdb_id != query.imdb_id:
+            continue
+        site = next((s for s in sites if s.config.id == torrent.site_id), None)
+        if site is None or checked >= MAX_IDENTITY_CHECKS:
+            continue
+        if checked:
+            time.sleep(max(settings.pt.request_delay_seconds, 0))
+        checked += 1
+        try:
+            torrent.identity_error = ''
+            site.verify_identity(torrent)
+        except LoginExpired as exc:
+            mark_site_invalid(site.config.id, str(exc))
+            torrent.identity_error = '影片身份未核实：站点登录失效'
+        except SiteError:
+            torrent.identity_error = '影片身份未核实：种子详情暂时无法访问'
+        if not identity_rejection(torrent, query):
+            break
 
 
 def mark_site_invalid(site_id: int, message: str) -> None:
@@ -161,6 +213,7 @@ def run_pt_scan(settings: AppSettings, movie_ids: list[int] | None = None) -> st
                     errors.append(f"{site.name}: {exc}")
                     continue
                 hits.extend(found)
+            verify_candidates(hits, sites, settings, target.query)
             best, ranked = rank_for_movie(hits, settings.rules, target.query, target.release_wait)
             _save_scan(target.id, ranked, errors)
             if best is not None:
@@ -184,7 +237,7 @@ def revalidate_cached_candidates(settings: AppSettings | None = None, movie_ids:
         if settings is None:
             row = session.get(Setting, SETTINGS_KEY)
             settings = AppSettings.model_validate(row.value) if row else AppSettings()
-        query = select(Movie).where(Movie.last_pt_candidates != [], Movie.status != MovieStatus.COMPLETED)
+        query = select(Movie).where(Movie.last_pt_candidates != [])
         if movie_ids is not None:
             query = query.where(Movie.id.in_(movie_ids))
         for movie in session.scalars(query.execution_options(yield_per=50)):
@@ -222,7 +275,28 @@ def download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: Torr
             movie = session.get(Movie, movie_id)
             if movie is None or movie.status in (MovieStatus.COMPLETED, MovieStatus.WATCHED, MovieStatus.IGNORED):
                 return False
+            query, wait = _movie_query(movie), release_wait_reason(movie)
+        if identity_rejection(torrent, query):
+            verify_candidates([torrent], [site], settings, query)
+        if not matches_movie(torrent, imdb_id=query.imdb_id, titles=query.titles, year=query.year) or identity_rejection(torrent, query) or wait:
+            _save_rejected_identity(movie_id, torrent, settings)
+            return False
         return _download(settings, movie_id, site, torrent)
+
+
+def _save_rejected_identity(movie_id: int, torrent: TorrentInfo, settings: AppSettings) -> None:
+    with session_scope() as session:
+        movie = session.get(Movie, movie_id)
+        if movie is None:
+            return
+        fields = TorrentInfo.__dataclass_fields__
+        hits = [TorrentInfo(**{k:v for k,v in item.items() if k in fields}) for item in movie.last_pt_candidates or []]
+        for i, hit in enumerate(hits):
+            if (hit.site_id,hit.torrent_id) == (torrent.site_id,torrent.torrent_id):
+                hits[i] = torrent
+        _, ranked = rank_for_movie(hits, settings.rules, _movie_query(movie), release_wait_reason(movie))
+        movie.last_pt_candidates = [item.to_dict() for item in ranked]
+        movie.last_pt_summary = f'找到 {len(ranked)} 个种子，{sum(item.ok for item in ranked)} 个符合要求'
 
 
 def _download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: TorrentInfo) -> bool:
@@ -299,6 +373,13 @@ def download_candidate(settings: AppSettings, movie_id: int, index: int, *, site
         raise SiteError("该站点不可用")
     try:
         if not download(settings, movie_id, sites[0], torrent):
+            with session_scope() as session:
+                row = session.get(Movie, movie_id)
+                if row:
+                    rejected = next((item for item in row.last_pt_candidates or [] if item.get('site_id') == torrent.site_id and str(item.get('torrent_id')) == torrent.torrent_id), {})
+                    reason = rejected.get('reason') or ''
+                    if any(label in reason for label in ('影片不匹配', '影片身份未核实', '等待上线确认')):
+                        raise SiteError(reason)
             raise SiteError("下载失败，详见动态")
     finally:
         for site in sites:

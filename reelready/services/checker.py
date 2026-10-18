@@ -92,14 +92,19 @@ def _check_one(settings: AppSettings, movie_id: int, tmdb: TMDBClient | None, do
 
 
 def _advance(session, movie: Movie) -> bool:
+    from .pt import release_wait_reason
+
     if movie.stage >= Stage.DOWNLOADED:
         return False
     target = Stage.IN_CINEMA
-    if movie.streaming:
+    if movie.streaming and not release_wait_reason(movie):
         target = Stage.STREAMING
     elif movie.digital_date:
         target = Stage.DATED
     if target <= movie.stage:
+        if movie.stage == Stage.STREAMING and target < Stage.STREAMING:
+            # Correct an old preorder-as-streaming classification without an alert.
+            movie.stage = target
         return False
     movie.stage = target
     if target == Stage.STREAMING:

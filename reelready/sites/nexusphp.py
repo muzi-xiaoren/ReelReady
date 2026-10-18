@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup, Tag
 
 from ..http import make_client
 from ..torrent_rules import TorrentInfo
-from .base import BaseSite, LoginExpired, MovieQuery, SiteConfig, SiteError, looks_like_torrent
+from .base import BaseSite, LoginExpired, MovieQuery, SiteConfig, SiteError, looks_like_torrent, detail_imdb
 
 _DETAIL_ID = re.compile(r"details\.php\?id=(\d+)")
 _IMDB = re.compile(r"imdb\.com/title/(tt\d{6,10})")
@@ -182,6 +182,13 @@ class NexusPHPSite(BaseSite):
                 raise LoginExpired("cookie 已失效，请在浏览器里重新登录")
             raise SiteError("下载种子失败: 站点没有返回种子文件")
         return resp.content
+
+    def verify_identity(self, torrent: TorrentInfo) -> None:
+        if not torrent.torrent_id.isdigit():
+            raise SiteError('无效的种子编号')
+        html = self._get_page('details.php', id=torrent.torrent_id)
+        torrent.imdb_id = detail_imdb(html)
+        torrent.imdb_source = 'detail'
 
 
 def _direct_rows(table: Tag) -> list[Tag]:

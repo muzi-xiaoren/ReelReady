@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import re
 
 from ..torrent_rules import TorrentInfo
 
@@ -58,6 +59,10 @@ class BaseSite:
         """Fetch the .torrent file contents."""
         raise NotImplementedError
 
+    def verify_identity(self, torrent: TorrentInfo) -> None:
+        """Adapters may supplement search hits from independent detail metadata."""
+        return None
+
     def close(self) -> None:
         pass
 
@@ -65,3 +70,20 @@ class BaseSite:
 def looks_like_torrent(content: bytes) -> bool:
     # Bencoded dictionaries start with "d" and torrents always carry an "info" dict.
     return content[:1] == b"d" and b"4:info" in content[:4096]
+
+
+def detail_imdb(html: str) -> str | None:
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, 'html.parser')
+    for node in soup.select('script, style, nav, footer'):
+        node.decompose()
+    scopes = soup.select('#descr, #kdescr, #description, .torrent-description')
+    def ids(nodes):
+        text = ' '.join(str(node) for node in nodes)
+        return set(re.findall(r'\btt\d{6,10}\b', text))
+    found = ids(scopes) if scopes else set()
+    if not found:
+        found = ids([soup])
+    # Multiple different IDs are ambiguous; never select the desired one from a sidebar.
+    return next(iter(found)) if len(found) == 1 else None

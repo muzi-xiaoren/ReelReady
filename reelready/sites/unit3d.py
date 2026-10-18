@@ -9,7 +9,7 @@ from urllib.parse import urljoin, urlsplit
 from bs4 import BeautifulSoup
 
 from ..torrent_rules import TorrentInfo
-from .base import LoginExpired, MovieQuery, SiteError, looks_like_torrent
+from .base import LoginExpired, MovieQuery, SiteError, looks_like_torrent, detail_imdb
 from .nexusphp import NexusPHPSite, _int, parse_size
 
 _DETAIL = re.compile(r"/torrents/(\d+)(?:[/?#]|$)")
@@ -42,7 +42,9 @@ class Unit3DSite(NexusPHPSite):
             if torrents:
                 if "imdbId" in params:
                     for torrent in torrents:
-                        torrent.imdb_id = torrent.imdb_id or query.imdb_id
+                        if not torrent.imdb_id:
+                            torrent.imdb_id = query.imdb_id
+                            torrent.imdb_source = 'search'
                 return torrents
         return []
 
@@ -69,6 +71,12 @@ class Unit3DSite(NexusPHPSite):
                 imdb_id=_IMDB.search(imdb["href"])[0] if imdb else None,
             ))
         return results
+
+    def verify_identity(self, torrent: TorrentInfo) -> None:
+        if not torrent.torrent_id.isdigit():
+            raise SiteError('无效的种子编号')
+        torrent.imdb_id = detail_imdb(self._get_page(f'torrents/{torrent.torrent_id}'))
+        torrent.imdb_source = 'detail'
 
     def download(self, torrent: TorrentInfo) -> bytes:
         if not torrent.torrent_id.isdigit():

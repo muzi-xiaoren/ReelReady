@@ -55,6 +55,7 @@ class TorrentInfo:
     imdb_id: str | None = None
     imdb_source: str = "metadata"  # "search" is an inferred id, not independent evidence.
     category: str | None = None
+    identity_error: str = ""
 
 
 @dataclass

@@ -93,7 +93,7 @@
       <h2>{{ '已提交下载' if movie.downloaded else '已确认上线' if release_confirmed else '持续监测中' }}</h2>
       <dl class="movie-facts">
         <dt>数字版</dt><dd>{{ movie.digital_date or '日期待确认' }}</dd>
-        <dt>可看平台</dt><dd>{{ (movie.streaming or []) | length }} 个</dd>
+        <dt>{{ '可看平台' if release_confirmed else '平台记录' }}</dt><dd>{{ (movie.streaming or []) | length }} 个{{ '（可能含预售）' if movie.streaming and not release_confirmed }}</dd>
         <dt>上次检测</dt><dd>{{ movie.last_checked_at | when }}</dd>
       </dl>
       {% if show_pt_results %}
@@ -135,7 +135,7 @@
     <h2>上线情况</h2>
     <dl class="kv">
       <dt>数字版日期</dt><dd>{{ movie.digital_date or "暂无" }}</dd>
-      <dt>可看平台</dt>
+      <dt>{{ '可看平台' if release_confirmed else '平台记录（不代表已上线）' }}</dt>
       <dd>
         {% for name in movie.streaming or [] %}<span class="tag">{{ name }}</span>{% else %}暂无{% endfor %}
       </dd>
@@ -172,7 +172,7 @@
   <div class="torrent-result-summary"><span class="pill ok">{{ accepted_count }} 个符合条件</span><span class="faint small">{{ rejected_count }} 个未通过筛选 · 列表为最近一次保存的结果</span></div>
   {% if accepted_count %}{{ torrent_table(movie, movie.last_pt_candidates, true) }}{% else %}<div class="torrent-empty">暂无符合条件的种子，继续监测等待资源。</div>{% endif %}
   {% if rejected_count %}<details class="torrent-rejected">
-    <summary><span>不符合条件的种子 <span class="heading-count">{{ rejected_count }}</span></span><span class="faint small">展开查看原因与手动下载</span></summary>
+    <summary><span>不符合条件的种子 <span class="heading-count">{{ rejected_count }}</span></span><span class="faint small">展开查看原因 · 错片和未核实资源禁止下载</span></summary>
     {{ torrent_table(movie, movie.last_pt_candidates, false) }}
   </details>{% endif %}
 </section>

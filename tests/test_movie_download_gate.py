@@ -116,6 +116,10 @@ class MovieDownloadGateTests(unittest.TestCase):
                 with self.subTest(title=title, subtitle=subtitle):
                     hit = self.hit(title, subtitle, imdb_id=None)
                     best, _ = rank_for_movie([hit], self.rules, self.query, '')
+                    self.assertIsNone(best)  # A title/year match still needs independent identity.
+                    hit.imdb_id = self.query.imdb_id
+                    hit.imdb_source = 'detail'
+                    best, _ = rank_for_movie([hit], self.rules, self.query, '')
                     self.assertIsNotNone(best)
 
     def test_subtitle_year_keeps_existing_one_year_tolerance(self):

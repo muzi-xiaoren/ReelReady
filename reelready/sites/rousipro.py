@@ -8,7 +8,7 @@ import httpx
 
 from ..http import make_client
 from ..torrent_rules import TorrentInfo
-from .base import BaseSite, LoginExpired, MovieQuery, SiteError, looks_like_torrent
+from .base import BaseSite, LoginExpired, MovieQuery, SiteError, looks_like_torrent, detail_imdb
 
 
 class RousiProSite(BaseSite):
@@ -78,6 +78,14 @@ class RousiProSite(BaseSite):
                     detail_url=urljoin(self.base, f"torrents/{item['id']}"),
                 ) for item in items]
         return []
+
+    def verify_identity(self, torrent: TorrentInfo) -> None:
+        if not torrent.torrent_id.isdigit():
+            raise SiteError('无效的 Rousi Pro 种子编号')
+        detail = self._api(f'api/v1/torrents/{torrent.torrent_id}')
+        values = [detail.get(key) or '' for key in ('imdb', 'imdb_id', 'description')]
+        torrent.imdb_id = detail_imdb(' '.join(str(value) for value in values))
+        torrent.imdb_source = 'detail'
 
     def download(self, torrent: TorrentInfo):
         if not torrent.torrent_id.isdigit():
