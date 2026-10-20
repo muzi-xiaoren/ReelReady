@@ -354,6 +354,7 @@ input:focus, select:focus, textarea:focus {
 .add-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .add-bar form { display: flex; gap: 8px; }
 .add-bar input { width: 340px; }
+.add-bar select { width: auto; }
 
 .movie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 22px; }
 

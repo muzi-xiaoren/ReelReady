@@ -1,7 +1,10 @@
+import json
 import logging
+from contextlib import nullcontext
+from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import defer
@@ -23,6 +26,7 @@ from ..models import (
 from ..notifier import NotifyError, render_single, send_mail
 from ..scheduler import JOBS, next_run, scheduler
 from ..services.clients import make_tmdb
+from ..services.backup import BackupError, export_data, import_data
 from ..services.movies import AddMovieError, add_manual, approve, cache_poster, poster_path
 from ..services.pt import download_candidate, release_wait_reason, revalidate_cached_candidates
 from ..services.sites import add_site, detected_sites, load_cookiecloud, discovery_identity, hidden_discovery_sites, set_discovery_hidden
@@ -101,6 +105,7 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
         nav="movies",
         tab=tab,
         tabs=[(t.value, STATUS_LABELS[t], counts.get(t.value, 0)) for t in TABS],
+        add_targets=[(t.value, STATUS_LABELS[t]) for t in ADD_TARGETS],
         movies=movies,
         q=q,
         jobs=_jobs_view(),
@@ -146,18 +151,30 @@ def movie_metadata_refresh(movie_id: int) -> Response:
     return toast("正在后台更新电影资料" if queued else "资料正在更新或队列已满，请稍后查看", HX_Refresh="true")
 
 
+# Lists a manual add may target; candidates only come from collection.
+ADD_TARGETS = [MovieStatus.MONITORING, MovieStatus.COMPLETED, MovieStatus.WATCHED, MovieStatus.IGNORED]
+
+
 @router.post("/movies/add")
-def movie_add(ref: Annotated[str, Form()]) -> Response:
+def movie_add(ref: Annotated[str, Form()], status: Annotated[str, Form()] = MovieStatus.MONITORING) -> Response:
+    if status not in {t.value for t in ADD_TARGETS}:
+        return toast("不支持添加到这个列表", "error")
+    target = MovieStatus(status)
     settings = load_settings()
+    from ..services.pt import _download_lock
+
     try:
-        with session_scope() as session:
-            movie = add_manual(session, ref, settings)
+        # Moving an existing movie out of monitoring must not race a download in progress.
+        with _download_lock if target != MovieStatus.MONITORING else nullcontext(), session_scope() as session:
+            movie = add_manual(session, ref, settings, target)
             movie_id, title = movie.id, movie.title
-            watched = movie.status == MovieStatus.WATCHED
+            placed = MovieStatus(movie.status)
     except AddMovieError as exc:
         return toast(str(exc), "error")
-    if watched:
-        return toast(f"《{title}》已在「已看过」中，可在详情中恢复", HX_Redirect=f"/movies/{movie_id}")
+    if placed != MovieStatus.MONITORING:
+        if placed != target:
+            return toast(f"《{title}》已在「{STATUS_LABELS[placed]}」中，可在详情中恢复", HX_Redirect=f"/movies/{movie_id}")
+        return toast(f"已把《{title}》加入「{STATUS_LABELS[placed]}」", HX_Redirect=f"/movies/{movie_id}")
     scheduler.trigger("check", [movie_id])
     scheduler.trigger("pt_scan", [movie_id])
     return toast(f"已添加《{title}》", HX_Redirect=f"/movies/{movie_id}")
@@ -538,6 +555,32 @@ async def settings_save(section: str, request: Request) -> Response:
     if section in ('rules', 'pt'):
         revalidate_cached_candidates()
     return toast("设置已保存")
+
+
+# Generous for years of history, but bounded so an upload cannot exhaust memory.
+MAX_IMPORT_BYTES = 64 * 1024 * 1024
+
+
+@router.get("/data/export")
+def data_export() -> Response:
+    body = json.dumps(export_data(), ensure_ascii=False, indent=1)
+    filename = f"reelready-backup-{datetime.now():%Y%m%d-%H%M%S}.json"
+    return Response(body, media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@router.post("/data/import")
+async def data_import(file: Annotated[UploadFile, File()]) -> Response:
+    raw = await file.read(MAX_IMPORT_BYTES + 1)
+    if len(raw) > MAX_IMPORT_BYTES:
+        return toast("文件太大，超过 64 MB", "error")
+    try:
+        stats = import_data(raw)
+    except BackupError as exc:
+        return toast(str(exc), "error")
+    return toast(
+        f"导入完成：新增 {stats['created']} 部，合并 {stats['merged']} 部，动态 {stats['events']} 条",
+        HX_Refresh="true",
+    )
 
 
 @router.post("/test/email")

@@ -16,6 +16,7 @@
 <div class="settings-layout">
   <nav class="settings-nav">
     {% for key, label, fields in sections %}<a href="#{{ key }}">{{ label }}</a>{% endfor %}
+    <a href="#backup">导入导出</a>
   </nav>
   <div>
     {% for key, label, fields in sections %}
@@ -49,6 +50,19 @@
       </form>
     </section>
     {% endfor %}
+    <section class="panel settings-section" id="backup">
+      <h2>导入导出</h2>
+      <p class="help">导出所有影片记录（含各列表状态、下载记录）和动态历史为 JSON 文件；不包含设置和站点，避免泄露密码、Cookie 与 API Key。导入时按豆瓣 / TMDB / IMDb 编号合并：已有影片只补全空缺信息，列表冲突时黑名单、已看过等更强的状态优先；导入前会自动备份数据库。</p>
+      <div class="form-actions">
+        <a class="btn" href="/data/export" download>{{ icon("download") }}导出记录</a>
+        <form hx-post="/data/import" hx-encoding="multipart/form-data" hx-swap="none"
+              hx-confirm="把备份文件合并到当前记录？" hx-on::after-request="this.reset()">
+          <input type="file" name="file" accept="application/json,.json" required hidden
+                 onchange="if(this.files.length) htmx.trigger(this.form, 'submit')">
+          <button class="btn" type="button" onclick="this.form.reset(); this.form.file.click()">{{ icon("refresh") }}导入记录</button>
+        </form>
+      </div>
+    </section>
   </div>
 </div>
 {% endblock %}

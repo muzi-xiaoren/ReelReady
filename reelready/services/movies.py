@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .. import config
 from ..http import make_client
-from ..models import Event, Movie, MovieStatus, Stage, now
+from ..models import STATUS_LABELS, Event, Movie, MovieStatus, Stage, now
 from ..settings import AppSettings
 from ..sources.douban import DoubanClient, DoubanError, DoubanMovie, parse_douban_id
 from ..sources.tmdb import TMDBClient, TMDBError, TMDBMovie, parse_imdb_id, parse_tmdb_id
@@ -300,8 +300,25 @@ def approve(movie: Movie) -> None:
     movie.approved_at = now()
 
 
-def add_manual(session: Session, ref: str, settings: AppSettings) -> Movie:
-    """Add a movie from a Douban / TMDB / IMDb link or id straight into monitoring."""
+def place_manual(movie: Movie, status: MovieStatus) -> None:
+    """Move a manually added movie into the list the user picked."""
+    if status == MovieStatus.MONITORING:
+        # Adding to monitoring never reopens a movie that is already downloaded or watched.
+        if movie.status in (MovieStatus.CANDIDATE, MovieStatus.IGNORED):
+            approve(movie)
+    elif status == MovieStatus.WATCHED:
+        if movie.status != MovieStatus.WATCHED:
+            movie.watched_from_status = movie.status
+            movie.status = MovieStatus.WATCHED
+    else:
+        movie.status = status
+        if status == MovieStatus.COMPLETED:
+            movie.stage = Stage.DOWNLOADED
+            movie.completed_at = movie.completed_at or now()
+
+
+def add_manual(session: Session, ref: str, settings: AppSettings, status: MovieStatus = MovieStatus.MONITORING) -> Movie:
+    """Add a movie from a Douban / TMDB / IMDb link or id into ``status`` (monitoring by default)."""
     ref = ref.strip()
     douban_id = parse_douban_id(ref)
     tmdb_id = parse_tmdb_id(ref)
@@ -314,8 +331,7 @@ def add_manual(session: Session, ref: str, settings: AppSettings) -> Movie:
 
     existing = find_existing(session, douban_id=douban_id, tmdb_id=tmdb_id, imdb_id=imdb_id)
     if existing is not None:
-        if existing.status in (MovieStatus.CANDIDATE, MovieStatus.IGNORED):
-            approve(existing)
+        place_manual(existing, status)
         return existing
 
     tmdb = make_tmdb(settings)
@@ -324,14 +340,14 @@ def add_manual(session: Session, ref: str, settings: AppSettings) -> Movie:
     try:
         with make_douban() as douban:
             movie = _fetch_new(douban_id, tmdb_id, imdb_id, tmdb, douban)
-            if movie.year and movie.year < min_year(settings):
+            # Old movies can still be recorded as completed, watched or ignored; only monitoring is limited.
+            if status == MovieStatus.MONITORING and movie.year and movie.year < min_year(settings):
                 raise AddMovieError(f"《{movie.title}》是 {movie.year} 年的片，暂不支持老片")
             existing = find_existing(
                 session, douban_id=movie.douban_id, tmdb_id=movie.tmdb_id, imdb_id=movie.imdb_id
             )
             if existing is not None:
-                if existing.status not in (MovieStatus.WATCHED, MovieStatus.COMPLETED):
-                    approve(existing)
+                place_manual(existing, status)
                 return existing
             session.add(movie)
             session.flush()
@@ -341,10 +357,10 @@ def add_manual(session: Session, ref: str, settings: AppSettings) -> Movie:
             tmdb.close()
 
     # Linking may have merged this into a record the user had ignored; a manual add wins.
-    if movie.status not in (MovieStatus.COMPLETED, MovieStatus.WATCHED):
-        approve(movie)
+    place_manual(movie, status)
+    target = "监测" if status == MovieStatus.MONITORING else f"「{STATUS_LABELS[status]}」"
     add_event(
-        session, "added", f"《{movie.title}》已加入监测", ratings_text(movie), movie_id=movie.id, notify=False
+        session, "added", f"《{movie.title}》已加入{target}", ratings_text(movie), movie_id=movie.id, notify=False
     )
     session.flush()
     cache_poster(movie, settings)
@@ -358,7 +374,8 @@ def _fetch_new(
     tmdb: TMDBClient | None,
     douban: DoubanClient,
 ) -> Movie:
-    movie = Movie(title="", source="manual", status=MovieStatus.MONITORING, approved_at=now())
+    # place_manual decides the final list once ids are linked.
+    movie = Movie(title="", source="manual", status=MovieStatus.CANDIDATE)
     try:
         if douban_id:
             apply_douban(movie, douban.detail(douban_id))
