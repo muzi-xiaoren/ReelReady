@@ -583,6 +583,16 @@ async def data_import(file: Annotated[UploadFile, File()]) -> Response:
     )
 
 
+@router.post("/backup/run")
+def backup_run() -> Response:
+    settings = load_settings().backup
+    if not (settings.github_enabled or settings.webdav_enabled):
+        return toast("请先启用 GitHub 或 WebDAV 备份目标", "warn")
+    if not scheduler.trigger("backup"):
+        return toast("备份任务已在运行或等待队列中", "warn")
+    return toast("已开始云备份，结果见影片页顶部的任务状态")
+
+
 @router.post("/test/email")
 def test_email() -> Response:
     settings = load_settings()

@@ -138,6 +138,22 @@ class EventsSettings(BaseModel):
     retention_days: int | None = Field(default=None, ge=1, le=36500, title="动态保留天数", description="留空永久保留。填写正整数后，每天自动删除超过该天数的动态（包括未发送的通知），不影响影片和下载任务。", json_schema_extra={"widget": "optional_int"})
 
 
+class BackupSettings(BaseModel):
+    auto_enabled: bool = _field(False, "启用定时备份", "按间隔把影片记录和动态历史上传到下面启用的目标；不包含设置和站点。")
+    interval_hours: float = _field(24, "备份间隔(小时)")
+    keep_count: int = Field(30, ge=1, le=1000, title="每个目标保留份数", description="上传后删除更早的备份文件。")
+    github_enabled: bool = _field(False, "上传到 GitHub 仓库")
+    github_repo: str = _field("", "GitHub 仓库", "格式 owner/name，建议用私有仓库")
+    github_branch: str = _field("", "分支", "留空使用仓库默认分支")
+    github_path: str = _field("reelready-backups", "仓库内目录")
+    github_token: str = _field("", "GitHub Token", "Fine-grained token，只授权该仓库的 Contents 读写权限", secret=True)
+    github_use_proxy: bool = _field(True, "GitHub 通过代理访问", "填了网络代理地址时生效")
+    webdav_enabled: bool = _field(False, "上传到 WebDAV")
+    webdav_url: str = _field("", "WebDAV 目录地址", "例如 https://dav.jianguoyun.com/dav/ReelReady/，目录不存在会自动创建")
+    webdav_username: str = _field("", "WebDAV 用户名")
+    webdav_password: str = _field("", "WebDAV 密码", "坚果云填应用密码", secret=True)
+
+
 class AppSettings(BaseModel):
     collect: CollectSettings = Field(default_factory=CollectSettings)
     check: CheckSettings = Field(default_factory=CheckSettings)
@@ -148,6 +164,7 @@ class AppSettings(BaseModel):
     tmdb: TMDBSettings = Field(default_factory=TMDBSettings)
     network: NetworkSettings = Field(default_factory=NetworkSettings)
     events: EventsSettings = Field(default_factory=EventsSettings)
+    backup: BackupSettings = Field(default_factory=BackupSettings)
     cookiecloud: CookieCloudSettings = Field(default_factory=CookieCloudSettings)
 
 
@@ -162,6 +179,7 @@ SECTIONS: list[tuple[str, str]] = [
     ("events", "动态记录"),
     ("tmdb", "TMDB"),
     ("network", "网络"),
+    ("backup", "云备份"),
 ]
 
 

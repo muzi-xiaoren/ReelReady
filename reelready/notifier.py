@@ -17,6 +17,7 @@ KIND_LABELS = {
     "downloaded": "已开始下载",
     "download_failed": "下载失败",
     "site_invalid": "站点登录失效",
+    "backup_failed": "云备份失败",
 }
 
 

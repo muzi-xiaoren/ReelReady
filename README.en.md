@@ -18,6 +18,7 @@ Movies reach cinemas long before they are released online, and private trackers 
 - **Email**: successful download submission, download failures and expired site logins are sent separately; dated / streaming / new candidates go into a daily digest. Submission mail includes the original event time, and each sent message is recorded separately with concurrent sending prevented. SMTP presets for QQ, 163, 126, Gmail, iCloud, Outlook and more; multiple recipients supported
 - **Event management**: delete individual records or set a retention period; leaving it blank keeps records permanently
 - **Import / export**: under Settings → Import / Export, export movie records and event history as JSON and import them after moving or reinstalling. Settings and sites are left out so passwords, cookies and API keys never end up in the file. Imports merge by Douban / TMDB / IMDb id, only fill in missing details of existing movies, and back up the database first
+- **Cloud backup**: under Settings → Cloud backup, upload the same export to a GitHub repository (preferably private; the token only needs Contents read/write on that repository) and / or a WebDAV folder such as Jianguoyun. Back up on demand or on a schedule; each target keeps only the latest N files, and failures are logged as events and included in the daily digest
 - **Settings auto-save**: reorder regions and resolutions; background tasks run sequentially and duplicate requests are not repeatedly queued
 - **Catch-up on startup**: the computer does not have to run 24/7; missed checks run right after startup
 

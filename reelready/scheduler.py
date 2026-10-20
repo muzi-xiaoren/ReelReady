@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from .db import session_scope
 from .models import JobState, now
 from .services.checker import run_check
+from .services.cloud_backup import run_cloud_backup
 from .services.collector import run_collect
 from .services.events import notify_urgent, send_digest, cleanup_events
 from .services.pt import run_pt_scan
@@ -34,6 +35,8 @@ class Job:
     run: Callable[..., str]
     interval: Callable[[AppSettings], float] | None  # hours; None means "once a day"
     takes_movies: bool = False
+    # Disabled jobs only run when triggered by hand.
+    enabled: Callable[[AppSettings], bool] | None = None
 
 
 JOBS: dict[str, Job] = {
@@ -44,11 +47,14 @@ JOBS: dict[str, Job] = {
         Job("pt_scan", "搜索 PT 并下载", run_pt_scan, lambda s: s.pt.interval_hours, takes_movies=True),
         Job("digest", "发送每日汇总", lambda s: send_digest(s), None),
         Job("events_cleanup", "清理到期动态", cleanup_events, lambda s: 24),
+        Job("backup", "云备份", run_cloud_backup, lambda s: s.backup.interval_hours, enabled=lambda s: s.backup.auto_enabled),
     ]
 }
 
 
 def _is_due(job: Job, settings: AppSettings, last_run: datetime | None, current: datetime, state: JobState | None = None) -> bool:
+    if job.enabled is not None and not job.enabled(settings):
+        return False
     if job.interval is None:
         slot = current.replace(hour=settings.email.digest_hour % 24, minute=0, second=0)
         return (current >= slot and (last_run is None or last_run < slot)) or (
@@ -60,6 +66,8 @@ def _is_due(job: Job, settings: AppSettings, last_run: datetime | None, current:
 
 
 def next_run(job: Job, settings: AppSettings, last_run: datetime | None, state: JobState | None = None) -> datetime | None:
+    if job.enabled is not None and not job.enabled(settings):
+        return None
     current = now()
     if job.interval is None:
         slot = current.replace(hour=settings.email.digest_hour % 24, minute=0, second=0)
