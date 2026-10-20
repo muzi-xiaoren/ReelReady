@@ -55,7 +55,7 @@ templates.env.globals["version"] = __version__
 # Compute once at startup so local UI updates also invalidate browser caches.
 templates.env.globals["static_revision"] = {
     name: hashlib.sha256((config.STATIC_DIR / name).read_bytes()).hexdigest()[:12]
-    for name in ('style.css', 'app.js')
+    for name in ('style.css', 'app.js', 'favicon.svg')
 }
 
 

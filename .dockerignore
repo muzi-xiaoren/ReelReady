@@ -1,6 +1,7 @@
 .git
 .github
 data
+assets/branding/favicon-options
 **/__pycache__
 **/*.pyc
 .venv

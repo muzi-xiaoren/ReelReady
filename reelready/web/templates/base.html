@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}ReelReady{% endblock %}</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon.svg?v={{ static_revision['favicon.svg'] }}" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css?v={{ static_revision['style.css'] }}">
   <script src="/static/vendor/htmx.min.js"></script>
   <script>
@@ -16,7 +16,7 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/movies">
-        <span class="brand-mark">{{ icon("reel") }}</span>
+        <img src="/static/favicon.svg?v={{ static_revision['favicon.svg'] }}" width="38" height="38" alt="">
         ReelReady
       </a>
       <nav class="nav">

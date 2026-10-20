@@ -1,0 +1,37 @@
+{
+  "generator": "built-in image_gen",
+  "selected": "03",
+  "base_prompt": "Use case: logo-brand. Asset type: browser favicon and application icon for ReelReady, a personal cinema release tracking app. Produce ONE square icon concept, not a sheet or interface mockup. A beautifully balanced very bold symbol, immediately legible at 16px and 32px. Clean geometric vector-like graphic, meticulous negative space, no tiny detail, no thin strokes, no outline framing, no watermark, no wordmark or labels. Fill most of the square with a rounded-square tile and center the symbol with consistent 15 percent inset. Transparent outside the rounded-square tile; tile itself is opaque. Flat front-facing design, no perspective, no 3D render, no cast shadow.",
+  "concepts": [
+    {
+      "id": "01",
+      "name": "金色 R",
+      "prompt": "A warm amber-gold tile (#F5B84B) with one charcoal-black bespoke capital R monogram. The counter of the R is a simple right-facing play triangle cut out in gold; the diagonal leg is strong and graceful. Premium confident identity, two colors only, superb tiny-size clarity."
+    },
+    {
+      "id": "02",
+      "name": "胶片播放",
+      "prompt": "A near-black navy rounded-square tile with a bold golden movie-film frame. Inside the frame a large golden play triangle; integrate exactly two very simple square sprocket holes on each side, chunky not delicate. Warm gold on charcoal, cinematic, highly reduced geometry."
+    },
+    {
+      "id": "03",
+      "name": "就绪胶片",
+      "prompt": "An emerald-green rounded-square tile (#137C66). Center one thick ivory continuous symbol combining a bold right-facing play triangle with a checkmark emerging naturally at lower right, meaning a movie is ready. Icon feels premium and calm, two-color, no additional circle, no lettering."
+    },
+    {
+      "id": "04",
+      "name": "蓝色放映",
+      "prompt": "A vivid cobalt-blue rounded-square tile (#3657E8) with an ivory abstract cinema projector symbol: one large simple round lens attached to a compact broad film-camera body and one white triangular light beam at the right. Three or fewer bold connected shapes, no film-reel spokes or complex details, excellent balance."
+    },
+    {
+      "id": "05",
+      "name": "极简场记板",
+      "prompt": "An ivory rounded-square tile (#FFF3D9) with a single charcoal-black chunky minimalist clapperboard; the top clap bar slightly angled with exactly two broad amber diagonal sections. Inside the solid black board a large ivory play triangle in negative space. No writing, no stripes beyond the two broad clap-bar sections."
+    },
+    {
+      "id": "06",
+      "name": "复古胶片",
+      "prompt": "A burnt-orange rounded-square tile (#D7663E). Center a large cream-white film reel with exactly three large circular burnt-orange holes, and a simple broad film ribbon curving down to the lower right. Friendly retro cinema identity, modern reduction, strong silhouette, two flat colors only."
+    }
+  ]
+}
