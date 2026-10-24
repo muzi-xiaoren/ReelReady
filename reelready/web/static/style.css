@@ -952,7 +952,7 @@ td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .gallery-captions-hidden [data-gallery-captions] .glasses-slash { display: inline; }
 [data-gallery-captions][aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
 .gallery-view .movie-actions { position: absolute; z-index: 3; bottom: 12px; left: 12px; right: 12px; padding: 0; opacity: 0; visibility: hidden; pointer-events: none; }
-.gallery-view .movie-actions .btn { background: var(--bg-elev); }
+.gallery-view .movie-actions .btn:not(.btn-primary) { background: var(--bg-elev); }
 .gallery-view .poster .stage { opacity: 0; visibility: hidden; }
 .gallery-view .movie-sub { position: absolute; z-index: 2; bottom: 54px; left: 12px; right: 12px; color: #fff; opacity: 0; visibility: hidden; margin: 0; }
 .gallery-view .movie-card:hover .movie-actions, .gallery-view .movie-card:focus-within .movie-actions,
