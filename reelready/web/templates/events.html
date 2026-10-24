@@ -1,40 +1,34 @@
 {% extends "base.html" %}
 {% from "partials/icons.html" import icon %}
 {% block title %}动态 · ReelReady{% endblock %}
+{% block body_class %}management-view events-view{% endblock %}
+{% block page_class %}management-page events-page{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1>动态</h1>
-    <div class="subtitle">记录影片收集、监测、定档、上线、下载和站点异常，方便查看进度与排查问题。开启邮件通知后，重要事件即时通知，其余进每日汇总。</div>
-  </div>
+<div class="page-head management-head">
+  <div><a class="management-back" href="/movies">{{ icon('arrow-left') }}影片库</a><h1>动态</h1></div>
+  <a class="btn btn-sm btn-ghost retention-link" href="/settings#events" title="设置动态保留时间">{{ icon('settings') }}{{ ('保留 ' ~ retention_days ~ ' 天') if retention_days else '永久保留' }}</a>
 </div>
-
-<p class="help">{% if retention_days %}动态保留 {{ retention_days }} 天，每天自动清理到期记录。{% else %}动态永久保留。{% endif %} <a href="/settings#events">设置保留时间 →</a></p>
-
-<div class="tabs">
-  <a class="tab {{ 'active' if not kind }}" href="/events">全部</a>
-  {% for key, label in kind_labels.items() %}
-  <a class="tab {{ 'active' if kind == key }}" href="/events?kind={{ key }}">{{ label }}</a>
-  {% endfor %}
+<div class="event-toolbar">
+  <nav class="tabs event-filters" aria-label="动态分类">{% for key, label in event_groups %}<a class="tab {{ 'active' if group == key }}" href="/events?group={{ key }}" {% if group == key %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+  <form method="get" action="/events" class="event-kind-filter"><input type="hidden" name="group" value="{{ group }}"><label for="event-kind-filter">事件类型</label><select id="event-kind-filter" name="kind" onchange="this.form.requestSubmit()"><option value="">全部类型</option>{% for key, label in kind_labels.items() %}<option value="{{ key }}" {{ 'selected' if kind == key }}>{{ label }}</option>{% endfor %}</select><noscript><button class="btn btn-sm">筛选</button></noscript></form>
 </div>
-
-<section class="panel">
+<section class="event-timeline" aria-label="动态记录">
   {% for e in events %}
+  {% if loop.changed(e.created_at.date()) %}<h2 class="event-day">{{ e.created_at.strftime('%Y-%m-%d') }}</h2>{% endif %}
   <div class="event-row">
-    <div class="event-kind">
-      <span class="pill {{ 'error' if e.urgent and e.kind != 'downloaded' else ('ok' if e.kind == 'downloaded' else 'no-dot') }}">{{ kind_labels.get(e.kind, e.kind) }}</span>
-    </div>
+    <span class="event-mark {{ 'error' if e.urgent and e.kind != 'downloaded' else 'ok' if e.kind == 'downloaded' }}" title="{{ kind_labels.get(e.kind, e.kind) }}">{{ icon('download' if e.kind == 'downloaded' else 'info' if e.urgent else 'film') }}</span>
     <div class="event-body">
-      <div style="font-weight:600">
+      <div class="event-title">
         {% if e.movie_id %}<a href="/movies/{{ e.movie_id }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
       </div>
-      {% if e.message %}<div class="muted" style="white-space:pre-line">{{ e.message }}</div>{% endif %}
+      <span class="event-type-label">{{ kind_labels.get(e.kind, e.kind) }}</span>
+      {% if e.message %}<div class="event-message">{{ e.message }}</div>{% endif %}
     </div>
     <div class="event-time" title="{{ e.created_at }}">
       {{ e.created_at | when }}
       <div class="faint">{% if e.kind != "added" %}{{ "已通知" if e.notified else ("待发送" if e.urgent else "待汇总") }}{% endif %}</div>
     </div>
-    <button class="btn btn-sm btn-icon btn-danger" type="button" title="删除动态" aria-label="删除动态：{{ e.title }}"
+    <button class="btn btn-sm btn-icon btn-ghost event-delete" type="button" title="删除动态" aria-label="删除动态：{{ e.title }}"
             hx-post="/events/{{ e.id }}/delete" hx-target="closest .event-row" hx-swap="outerHTML" hx-disabled-elt="this"
             hx-confirm="删除这条动态？" data-confirm-description="只删除这条记录，不影响影片或下载任务；尚未发送的通知也会取消。">{{ icon("trash") }}</button>
   </div>

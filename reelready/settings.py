@@ -7,7 +7,7 @@ the settings page, which is rendered generically from these models.
 import secrets
 import string
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 from sqlalchemy import text
@@ -139,7 +139,10 @@ class EventsSettings(BaseModel):
 
 
 class BackupSettings(BaseModel):
-    auto_enabled: bool = _field(False, "启用定时备份", "按间隔把影片记录和动态历史上传到下面启用的目标；不包含设置和站点。")
+    auto_enabled: bool = _field(False, "启用定时备份", "按间隔上传到已启用的目标，关闭后仍可手动备份。")
+    scope: Literal['records', 'full'] = _field('records', '备份范围', choices={
+        'records': '仅影片与动态', 'full': '全部信息（含设置与登录信息）',
+    })
     interval_hours: float = _field(24, "备份间隔(小时)")
     keep_count: int = Field(30, ge=1, le=1000, title="每个目标保留份数", description="上传后删除更早的备份文件。")
     github_enabled: bool = _field(False, "上传到 GitHub 仓库")

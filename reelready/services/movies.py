@@ -155,6 +155,34 @@ def apply_tmdb(movie: Movie, item: TMDBMovie) -> None:
     movie.poster_url = movie.poster_url or item.poster
     movie.overview = movie.overview or item.overview
     merge_details(movie, item.details, item.release_date)
+    infer_rerelease(movie)
+
+
+def infer_rerelease(movie: Movie) -> bool:
+    """Recover a missing flag only with repeated theatrical dates in the same region."""
+    details = movie.details or {}
+    try:
+        primary = date.fromisoformat(details.get('release_date') or '')
+    except (ValueError, TypeError):
+        return False
+    collected = movie.created_at.date() if movie.created_at else date.today()
+    releases = []
+    for entry in details.get('releases') or []:
+        if not isinstance(entry, dict) or not entry.get('region'):
+            continue
+        try:
+            released = date.fromisoformat(entry.get('date') or '')
+        except (TypeError, ValueError):
+            continue
+        releases.append((released, entry['region']))
+    repeats = [{'date': released.isoformat(), 'region': region} for released, region in releases
+               if released.year == collected.year and primary.year < collected.year
+               and released <= date.today()
+               and any(old_region == region and (released - old_date).days >= 365 for old_date, old_region in releases)]
+    if not repeats or details.get('is_rerelease'):
+        return False
+    movie.details = dict(details, is_rerelease=True, collection_releases=details.get('collection_releases') or repeats)
+    return True
 
 
 def restore_primary_year(movie: Movie) -> bool:

@@ -1,12 +1,14 @@
 import json
+import hashlib
 import logging
 from contextlib import nullcontext
 from datetime import datetime
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
-from sqlalchemy import func, select
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import defer
 
 from ..db import session_scope
@@ -49,11 +51,21 @@ TABS = [MovieStatus.MONITORING, MovieStatus.CANDIDATE, MovieStatus.COMPLETED, Mo
 
 
 def _render(request: Request, name: str, **context) -> HTMLResponse:
+    if name in {'movies.html', 'events.html', 'sites.html', 'settings.html'}:
+        context['gallery_shell'] = True
+        if 'tabs' not in context:
+            with session_scope() as session:
+                counts = dict(session.execute(select(Movie.status, func.count()).group_by(Movie.status)).all())
+            context.update(tabs=[(t.value, STATUS_LABELS[t], counts.get(t.value, 0)) for t in TABS],
+                           tab=MovieStatus.MONITORING.value, q='', availability='all', sort='newest',
+                           movies=[], add_targets=[(t.value, STATUS_LABELS[t]) for t in ADD_TARGETS])
+        if 'jobs' not in context:
+            context['jobs'] = _jobs_view()
     return templates.TemplateResponse(request, name, {"nav": context.pop("nav", ""), **context})
 
 
-def _jobs_view() -> list[dict]:
-    settings = load_settings()
+def _jobs_view(settings=None) -> list[dict]:
+    settings = settings or load_settings()
     with session_scope() as session:
         states = {s.name: s for s in session.scalars(select(JobState))}
         for state in states.values():
@@ -71,6 +83,8 @@ def _jobs_view() -> list[dict]:
                 "status": state.last_status if state else None,
                 "message": state.last_message if state else None,
                 "running": scheduler.running == job.label,
+                "enabled": job.enabled is None or job.enabled(settings),
+                "manual_available": job.name != 'backup' or settings.backup.github_enabled or settings.backup.webdav_enabled,
             }
         )
     return views
@@ -79,26 +93,90 @@ def _jobs_view() -> list[dict]:
 # ---------------------------------------------------------------- movies
 
 
+def _movie_revision(session, movie_id: int | None = None) -> str:
+    # Only narrow scalar columns, never load posters, credits or torrent caches.
+    query = select(Movie.id, Movie.updated_at).order_by(Movie.id)
+    if movie_id is not None:
+        query = query.where(Movie.id == movie_id)
+    revision = hashlib.sha256()
+    for row in session.execute(query):
+        revision.update(f'{row.id}:{row.updated_at};'.encode())
+    if movie_id is not None:
+        for event_id in session.scalars(select(Event.id).where(Event.movie_id == movie_id).order_by(Event.id)):
+            revision.update(f'e{event_id};'.encode())
+    return revision.hexdigest()[:20]
+
+
+@router.get('/movies/revision')
+def movie_revision(movie_id: int | None = None) -> JSONResponse:
+    with session_scope() as session:
+        revision = _movie_revision(session, movie_id)
+    return JSONResponse({'revision': revision, 'pending': metadata_pending(movie_id) if movie_id else False},
+                        headers={'Cache-Control': 'no-store'})
+
+
 @router.get("/")
 def home() -> RedirectResponse:
     return RedirectResponse("/movies", status_code=302)
 
 
 @router.get("/movies", response_class=HTMLResponse)
-def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = "") -> HTMLResponse:
+def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = "",
+                availability: str = 'all', sort: str = 'newest') -> HTMLResponse:
     if tab not in {t.value for t in TABS}:
         tab = MovieStatus.MONITORING
+    filter_labels = [('all', '全部'), ('available', '已上线'), ('dated', '已定档'),
+                     ('unconfirmed', '暂未确认上线'), ('unchecked', '待检测')]
+    sort_options = [('newest', '最新加入'), ('available', '已上线优先'), ('douban', '豆瓣评分最高'),
+                    ('tmdb', 'TMDB 评分最高'), ('year', '上映年份最新')]
+    if availability not in dict(filter_labels) or tab != MovieStatus.CANDIDATE:
+        availability = 'all'
+    if sort not in dict(sort_options) or tab != MovieStatus.CANDIDATE:
+        sort = 'newest'
+    q = q.strip()
+    category = case(
+        (Movie.stage >= Stage.STREAMING, 'available'),
+        (Movie.stage == Stage.DATED, 'dated'),
+        (and_(Movie.last_checked_at.is_(None), Movie.digital_date.is_(None), Movie.streaming == []), 'unchecked'),
+        else_='unconfirmed',
+    )
+    filters = []
     with session_scope() as session:
+        revision = _movie_revision(session)
         counts = dict(session.execute(select(Movie.status, func.count()).group_by(Movie.status)).all())
         query = select(Movie).options(defer(Movie.details, raiseload=True), defer(Movie.overview, raiseload=True), defer(Movie.last_pt_candidates, raiseload=True)).where(Movie.status == tab)
         if q:
-            like = f"%{q.strip()}%"
+            like = f"%{q}%"
             query = query.where(Movie.title.like(like) | Movie.original_title.like(like))
-        order = {
+        order = [{
             MovieStatus.COMPLETED: Movie.completed_at.desc(),
             MovieStatus.CANDIDATE: Movie.created_at.desc(),
-        }.get(tab, Movie.stage.desc())
-        movies = list(session.scalars(query.order_by(order, Movie.id.desc())))
+        }.get(tab, Movie.stage.desc())]
+        if tab == MovieStatus.CANDIDATE:
+            grouped = select(category, func.count()).where(Movie.status == MovieStatus.CANDIDATE)
+            if q:
+                grouped = grouped.where(Movie.title.like(like) | Movie.original_title.like(like))
+            group_counts = dict(session.execute(grouped.group_by(category)).all())
+            group_counts['all'] = sum(group_counts.values())
+            filters = [{'key': key, 'label': label, 'count': group_counts.get(key, 0),
+                        'url': '/movies?' + urlencode({'tab': tab, 'availability': key, 'sort': sort, 'q': q})}
+                       for key, label in filter_labels]
+            if availability != 'all':
+                query = query.where(category == availability)
+            priority = case((Movie.stage >= Stage.STREAMING, 0), (Movie.stage == Stage.DATED, 1),
+                            (category == 'unconfirmed', 2), else_=3)
+            order = {
+                'newest': [Movie.created_at.desc()],
+                'available': [priority, Movie.created_at.desc()],
+                'douban': [Movie.douban_rating.desc().nulls_last(), Movie.douban_votes.desc().nulls_last()],
+                'tmdb': [Movie.tmdb_rating.desc().nulls_last(), Movie.tmdb_votes.desc().nulls_last()],
+                'year': [Movie.year.desc().nulls_last(), Movie.created_at.desc()],
+            }[sort]
+        rows = session.execute(query.order_by(*order, Movie.id.desc()).add_columns(
+            func.json_extract(Movie.details, '$.is_rerelease')
+        )).all()
+        movies = [row[0] for row in rows]
+        rerelease_ids = {row[0].id for row in rows if row[1]}
     return _render(
         request,
         "movies.html",
@@ -107,7 +185,14 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
         tabs=[(t.value, STATUS_LABELS[t], counts.get(t.value, 0)) for t in TABS],
         add_targets=[(t.value, STATUS_LABELS[t]) for t in ADD_TARGETS],
         movies=movies,
+        rerelease_ids=rerelease_ids,
+        movie_revision=revision,
         q=q,
+        availability=availability,
+        candidate_filters=filters,
+        sort=sort,
+        sort_options=sort_options,
+        clear_filter_url='/movies?' + urlencode({'tab': tab, 'sort': sort}),
         jobs=_jobs_view(),
         stage_labels=STAGE_LABELS,
     )
@@ -116,6 +201,7 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
 @router.get("/movies/{movie_id}", response_class=HTMLResponse)
 def movie_detail(request: Request, movie_id: int) -> HTMLResponse:
     with session_scope() as session:
+        revision = _movie_revision(session, movie_id)
         movie = session.get(Movie, movie_id)
         if movie is None:
             raise HTTPException(404)
@@ -133,11 +219,13 @@ def movie_detail(request: Request, movie_id: int) -> HTMLResponse:
         nav="movies",
         movie=movie,
         metadata_pending=metadata_loading,
+        movie_revision=revision,
         show_pt_results=show_pt_results,
         release_confirmed=not release_wait_reason(movie),
         region_names=REGIONS,
         events=events,
-        stages=[(int(s), label) for s, label in STAGE_LABELS.items()],
+        stages=[(int(s), movie.stage_label if movie.stage == Stage.IN_CINEMA else '上映' )
+                if s == Stage.IN_CINEMA else (int(s), label) for s, label in STAGE_LABELS.items()],
         status_label=STATUS_LABELS[MovieStatus(movie.status)],
     )
 
@@ -336,15 +424,25 @@ def jobs_fragment(request: Request) -> HTMLResponse:
 
 
 @router.get("/events", response_class=HTMLResponse)
-def events_page(request: Request, kind: str = "") -> HTMLResponse:
+def events_page(request: Request, kind: str = "", group: str = 'all') -> HTMLResponse:
+    from ..notifier import KIND_LABELS
+    groups = {'all': (), 'movies': ('added', 'candidate', 'dated', 'streaming'),
+              'downloads': ('downloaded', 'download_failed'),
+              'errors': ('download_failed', 'site_invalid', 'backup_failed')}
+    if group not in groups:
+        group = 'all'
+    if kind not in KIND_LABELS:
+        kind = ''
     with session_scope() as session:
         query = select(Event).order_by(Event.created_at.desc()).limit(300)
+        if groups[group]:
+            query = query.where(Event.kind.in_(groups[group]))
         if kind:
             query = query.where(Event.kind == kind)
         events = list(session.scalars(query))
-    from ..notifier import KIND_LABELS
-
-    return _render(request, "events.html", nav="events", events=events, kind=kind, kind_labels=KIND_LABELS, retention_days=load_settings().events.retention_days)
+    return _render(request, "events.html", nav="events", events=events, kind=kind, group=group,
+                   event_groups=[('all', '全部'), ('movies', '影片'), ('downloads', '下载'), ('errors', '异常')],
+                   kind_labels=KIND_LABELS, retention_days=load_settings().events.retention_days)
 
 
 @router.post('/events/{event_id}/delete')
@@ -540,7 +638,9 @@ def cookiecloud_regenerate() -> Response:
 def settings_page(request: Request) -> HTMLResponse:
     settings = load_settings()
     sections = [(key, label, forms.describe(getattr(settings, key))) for key, label in SECTIONS]
-    return _render(request, "settings.html", nav="settings", sections=sections, presets=EMAIL_PRESETS)
+    jobs = _jobs_view(settings)
+    backup_job = next(job for job in jobs if job['name'] == 'backup')
+    return _render(request, "settings.html", nav="settings", sections=sections, presets=EMAIL_PRESETS, backup_job=backup_job, jobs=jobs)
 
 
 @router.post("/settings/{section}")
@@ -562,23 +662,32 @@ MAX_IMPORT_BYTES = 64 * 1024 * 1024
 
 
 @router.get("/data/export")
-def data_export() -> Response:
-    body = json.dumps(export_data(), ensure_ascii=False, indent=1)
-    filename = f"reelready-backup-{datetime.now():%Y%m%d-%H%M%S}.json"
-    return Response(body, media_type="application/json", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+def data_export(scope: str = 'records') -> Response:
+    try:
+        body = json.dumps(export_data(scope), ensure_ascii=False, indent=1)
+    except BackupError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    filename = f"reelready-{scope}-backup-{datetime.now():%Y%m%d-%H%M%S}.json"
+    return Response(body, media_type="application/json", headers={
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+    })
 
 
 @router.post("/data/import")
-async def data_import(file: Annotated[UploadFile, File()]) -> Response:
+async def data_import(file: Annotated[UploadFile, File()], scope: Annotated[str, Form()] = 'records') -> Response:
     raw = await file.read(MAX_IMPORT_BYTES + 1)
     if len(raw) > MAX_IMPORT_BYTES:
         return toast("文件太大，超过 64 MB", "error")
     try:
-        stats = import_data(raw)
+        stats = import_data(raw, scope)
     except BackupError as exc:
         return toast(str(exc), "error")
+    message = f"导入完成：新增 {stats['created']} 部，合并 {stats['merged']} 部，动态 {stats['events']} 条"
+    if 'settings' in stats:
+        message += f"；已恢复全部设置、{stats['sites']} 个站点、CookieCloud 和任务记录"
     return toast(
-        f"导入完成：新增 {stats['created']} 部，合并 {stats['merged']} 部，动态 {stats['events']} 条",
+        message,
         HX_Refresh="true",
     )
 

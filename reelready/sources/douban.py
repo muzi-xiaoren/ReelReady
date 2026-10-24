@@ -2,7 +2,7 @@
 
 import re
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -136,32 +136,67 @@ class DoubanClient:
             if not items or start >= int(data.get("total") or 0):
                 return movies
 
-    def recent_high_rated(self, first_year: int, last_year: int, min_rating: float) -> Iterator[DoubanMovie]:
-        """Read bounded discovery pages; exact dates are checked from details."""
+    def recent_high_rated(self, first_year: int, last_year: int, min_rating: float, *,
+                          progress: dict | None = None, checkpoint: Callable | None = None) -> Iterator[DoubanMovie]:
+        """Resume bounded batches instead of repeatedly reading only the first 150.
+
+        A cursor advances only after the consumer has processed the entire page.
+        No database transaction is held while fetching or consuming a page.
+        """
         import json
 
-        seen = set()
-        for year in range(last_year, first_year - 1, -1):
-            for start in range(0, 150, 50):
+        progress = progress if progress is not None else {}
+        years = list(range(last_year, first_year - 1, -1))
+        if not years:
+            return
+        next_year = progress.get('next_year', last_year)
+        if next_year in years:
+            index = years.index(next_year)
+            years = years[index:] + years[:index]
+        cursors = progress.setdefault('years', {})
+        budget = 6  # At most 300 feed entries per run, regardless of the year range.
+        for year in years:
+            cursor = cursors.setdefault(str(year), {'offset': 0})
+            start = max(0, int(cursor.get('offset', 0)))
+            seen = set()
+            for _ in range(min(3, budget)):
+                budget -= 1
                 data = self._get('/movie/recommend', start=start, count=50, sort='S',
                                  tags=str(year), selected_categories=json.dumps({'类型': '电影'}),
                                  range=f'{min_rating},10')
                 items = data.get('items') or []
-                new_ids = set()
-                for item in items:
-                    if item.get('type') not in (None, 'movie') or not item.get('id'):
+                if not isinstance(items, list):
+                    raise DoubanError('豆瓣推荐列表格式异常，已保留扫描进度')
+                page_ids = {str(item['id']) for item in items if isinstance(item, dict) and item.get('id')}
+                repeated = bool(page_ids) and (
+                    page_ids.issubset(seen) or
+                    (start > 0 and page_ids == set(cursor.get('last_ids') or []))
+                )
+                for item in ([] if repeated else items):
+                    if not isinstance(item, dict) or item.get('type') not in (None, 'movie') or not item.get('id'):
                         continue
                     identity = str(item['id'])
                     if identity in seen:
                         continue
                     seen.add(identity)
-                    new_ids.add(identity)
                     rating, votes = _rating(item)
                     yield DoubanMovie(id=identity, title=item.get('title') or '',
                                       year=_year(item.get('year')), rating=rating, votes=votes,
                                       cover=_cover(item))
-                if not new_ids or len(items) < 50:
+                ended = repeated or len(items) < 50 or not page_ids
+                start = 0 if ended else start + len(items)
+                cursor.update(offset=start, last_ids=sorted(page_ids),
+                              stop_reason='列表重复' if repeated else '已到列表末尾' if ended else '分批继续')
+                progress['next_year'] = year
+                if checkpoint:
+                    checkpoint()
+                if ended:
                     break
+            progress['next_year'] = year - 1 if year > first_year else last_year
+            if checkpoint:
+                checkpoint()
+            if budget <= 0:
+                break
 
     def detail(self, douban_id: str) -> DoubanMovie:
         data = self._get(f"/movie/{douban_id}")

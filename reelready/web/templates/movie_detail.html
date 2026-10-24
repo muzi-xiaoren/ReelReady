@@ -5,12 +5,13 @@
 {% block content %}
 <div style="margin-bottom:18px"><a class="muted" href="/movies?tab={{ movie.status }}">← 返回{{ status_label }}</a></div>
 
+<div id="movie-live-view" data-live-movies data-movie-id="{{ movie.id }}" data-revision="{{ movie_revision }}" data-pending="{{ 'true' if metadata_pending else 'false' }}">
 <section class="panel detail-progress" aria-label="影片进度">
   <div class="progress-heading"><span>影片进度</span><span class="faint small">{{ movie.stage_label }}</span></div>
   <div class="stepper">
     {% for value, label in stages %}
-    <div class="step {{ 'done' if movie.stage >= value }} {{ 'current' if movie.stage == value }}" {% if movie.stage == value %}aria-current="step"{% endif %}>
-      <span class="dot">{% if movie.stage >= value %}✓{% else %}{{ loop.index }}{% endif %}</span>
+    <div class="step {{ 'done' if movie.stage >= value and not movie.availability_pending }} {{ 'current' if movie.stage == value }}" {% if movie.stage == value %}aria-current="step"{% endif %}>
+      <span class="dot">{% if movie.availability_pending and value == 0 %}?{% elif movie.stage >= value %}✓{% else %}{{ loop.index }}{% endif %}</span>
       <div class="step-copy"><span class="label">{{ label }}</span><span class="step-note">{{ ['关注影片', movie.digital_date or '等待数字版日期', '确认可观看', '提交至下载器'][loop.index0] }}</span></div>
       {% if not loop.last %}<span class="line"></span>{% endif %}
     </div>
@@ -18,7 +19,7 @@
   </div>
 </section>
 
-<div id="movie-information" {% if metadata_pending %}hx-get="/movies/{{ movie.id }}" hx-select="#movie-information" hx-target="this" hx-swap="outerHTML" hx-trigger="every 2s" hx-disinherit="hx-select hx-target"{% endif %}>
+<div id="movie-information">
 {% set info = movie.details or {} %}
 <section class="detail-hero">
   <div class="detail-poster">
@@ -34,7 +35,7 @@
       <span class="pill no-dot">{{ status_label }}</span>
       {% if movie.year %}<span class="pill no-dot">{{ movie.year }}</span>{% endif %}
       {% if info.is_rerelease %}<span class="pill no-dot">重映收集</span>{% endif %}
-      <span class="faint small">来源：{{ {"douban": "豆瓣热映", "tmdb": "TMDB 院线", "manual": "手动添加"}[movie.source] }} · 加入于 {{ movie.created_at | when }}</span>
+      <span class="faint small">来源：{{ '豆瓣近期高分' if movie.source == 'douban' and info.collection_now_showing is sameas false else {"douban": "豆瓣热映", "tmdb": "TMDB 院线", "manual": "手动添加"}[movie.source] }} · 加入于 {{ movie.created_at | when }}</span>
     </div>
 
     <div class="detail-ratings">
@@ -90,7 +91,8 @@
   <aside class="detail-side">
     <div class="hero-status-card">
       <div class="hero-status-head"><span class="faint small">上线与下载</span><span class="pill stage-{{ movie.stage }}">{{ movie.stage_label }}</span></div>
-      <h2>{{ '已提交下载' if movie.downloaded else '已确认上线' if release_confirmed else '持续监测中' }}</h2>
+      <h2>{% if movie.downloaded %}已提交下载{% elif movie.status == 'watched' %}已看过 · 已暂停{% elif movie.status == 'ignored' %}已加入黑名单{% elif movie.status == 'candidate' %}{{ '已查到上线信息' if release_confirmed else '上线状态待检测' if movie.availability_pending else '暂未确认上线' }}{% else %}{{ '已确认上线' if release_confirmed else '上线状态待检测' if movie.availability_pending else '持续监测中' }}{% endif %}</h2>
+      {% if movie.status == 'candidate' %}<p class="help">待你确认后才会自动监测、搜索和下载；此处仅展示上线资料。</p>{% endif %}
       <dl class="movie-facts">
         <dt>数字版</dt><dd>{{ movie.digital_date or '日期待确认' }}</dd>
         <dt>{{ '可看平台' if release_confirmed else '平台记录' }}</dt><dd>{{ (movie.streaming or []) | length }} 个{{ '（可能含预售）' if movie.streaming and not release_confirmed }}</dd>
@@ -195,4 +197,5 @@
   <div class="muted">暂无动态</div>
   {% endif %}
 </section>
+</div>
 {% endblock %}

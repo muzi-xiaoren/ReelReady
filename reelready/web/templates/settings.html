@@ -2,25 +2,30 @@
 {% from "partials/icons.html" import icon %}
 {% from "partials/setting_field.html" import setting_field %}
 {% block title %}设置 · ReelReady{% endblock %}
+{% block body_class %}management-view settings-view{% endblock %}
+{% block page_class %}management-page settings-page{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1>设置</h1>
-    <div class="subtitle">修改后自动保存 · 每个分组显示保存状态</div>
-    <p class="help">任务依次执行：收集 → 上线检测 → PT 搜索与下载。启动后只补跑到期任务，手动操作也进入同一队列。</p>
-  </div>
+<div class="page-head management-head">
+  <div><a class="management-back" href="/movies">{{ icon('arrow-left') }}影片库</a><h1>设置</h1></div>
+  <span class="faint small">修改后自动保存</span>
 </div>
 
 {% set tests = {"email": ("/test/email", "发送测试邮件"), "qbittorrent": ("/test/qbittorrent", "测试连接"), "tmdb": ("/test/tmdb", "测试连接"), "backup": ("/backup/run", "立即备份")} %}
 
 <div class="settings-layout">
-  <nav class="settings-nav">
-    {% for key, label, fields in sections %}<a href="#{{ key }}">{{ label }}</a>{% endfor %}
-    <a href="#backup">导入导出</a>
+  <nav class="settings-nav" aria-label="设置分类">
+    {% for target, label, keys, symbol in [('collect','收集与检测','collect check','film'),('rules','搜索与选种','pt rules','search'),('qbittorrent','下载器','qbittorrent','download'),('email','通知与动态','email events','activity'),('tmdb','网络与资料','tmdb network','globe'),('backup','云备份','backup','copy'),('data-backup','导入导出','data-backup','undo')] %}
+    <a href="#{{ target }}" data-settings-groups="{{ keys }}">{{ icon(symbol) }}<span>{{ label }}</span></a>
+    {% endfor %}
   </nav>
   <div>
     {% for key, label, fields in sections %}
-    <section class="panel settings-section" id="{{ key }}">
+    <section class="panel settings-section" id="{{ key }}" data-settings-section>
+      {% if key == 'backup' %}
+      <form data-autosave="/settings/backup" data-cloud-backup>
+        {% include 'partials/cloud_backup_settings.html' %}
+      </form>
+      {% else %}
       <h2>{{ label }}</h2>
       <form data-autosave="/settings/{{ key }}">
         {% if key == "collect" %}
@@ -48,18 +53,32 @@
           {% endif %}
         </div>
       </form>
+      {% endif %}
     </section>
     {% endfor %}
-    <section class="panel settings-section" id="backup">
+    <section class="panel settings-section" id="data-backup" data-settings-section>
       <h2>导入导出</h2>
-      <p class="help">导出所有影片记录（含各列表状态、下载记录）和动态历史为 JSON 文件；不包含设置和站点，避免泄露密码、Cookie 与 API Key。导入时按豆瓣 / TMDB / IMDb 编号合并：已有影片只补全空缺信息，列表冲突时黑名单、已看过等更强的状态优先；导入前会自动备份数据库。</p>
+      <p class="help">选择导入导出的范围。换机器或重装时选「全部信息」，即可一并恢复连接配置，无需重新填写。</p>
+      <div class="field" style="max-width:420px">
+        <label for="data-export-scope">备份范围</label>
+        <select id="data-export-scope" onchange="document.querySelectorAll('[data-backup-scope]').forEach(input => input.value = this.value); document.getElementById('backup-full-help').hidden = this.value !== 'full'">
+          <option value="full" selected>全部信息（含设置、站点与登录信息）</option>
+          <option value="records">仅影片与动态</option>
+        </select>
+      </div>
+      <p class="help" id="backup-full-help">包含影片、动态、全部设置、站点、CookieCloud 同步数据和任务记录。文件内含密码、API Key 与 Cookie，请妥善保存，勿公开分享。</p>
+      <p class="help">影片按豆瓣 / TMDB / IMDb 编号合并，已有记录只补全空缺，列表冲突时保留更强的状态；全部信息模式会覆盖同名设置和站点配置。导入前自动备份数据库，历史动态不会重复发邮件。海报缓存不包含在内，使用时会自动获取。</p>
       <div class="form-actions">
-        <a class="btn" href="/data/export" download>{{ icon("download") }}导出记录</a>
+        <form method="get" action="/data/export">
+          <input type="hidden" name="scope" value="full" data-backup-scope>
+          <button class="btn btn-primary" type="submit">{{ icon("download") }}导出备份</button>
+        </form>
         <form hx-post="/data/import" hx-encoding="multipart/form-data" hx-swap="none"
-              hx-confirm="把备份文件合并到当前记录？" hx-on::after-request="this.reset()">
+              hx-confirm="按所选范围导入备份？影片会合并，全部信息模式会覆盖同名设置与站点配置。导入前自动备份数据库。" hx-on::after-request="this.file.value=''">
+          <input type="hidden" name="scope" value="full" data-backup-scope>
           <input type="file" name="file" accept="application/json,.json" required hidden
                  onchange="if(this.files.length) htmx.trigger(this.form, 'submit')">
-          <button class="btn" type="button" onclick="this.form.reset(); this.form.file.click()">{{ icon("refresh") }}导入记录</button>
+          <button class="btn" type="button" onclick="this.form.file.value=''; this.form.file.click()">{{ icon("refresh") }}导入备份</button>
         </form>
       </div>
     </section>

@@ -62,6 +62,22 @@ def init_db() -> None:
     _migrate_site_identity()
     _migrate_movie_years()
     _migrate_douban_posters()
+    _migrate_rerelease_flags()
+
+
+def _migrate_rerelease_flags() -> None:
+    from sqlalchemy import select, or_
+    from sqlalchemy.orm import load_only
+    from .models import Movie
+    from .services.movies import infer_rerelease
+
+    with session_scope() as session:
+        query = select(Movie).where(Movie.source == 'tmdb', or_(
+            Movie.details['is_rerelease'].as_boolean().is_(None),
+            Movie.details['is_rerelease'].as_boolean().is_(False),
+        )).options(load_only(Movie.id, Movie.details, Movie.created_at)).execution_options(yield_per=25)
+        for movie in session.scalars(query):
+            infer_rerelease(movie)
 
 
 def _migrate_douban_posters() -> None:

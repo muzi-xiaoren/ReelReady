@@ -1,17 +1,19 @@
 """Fetch full metadata without holding a database transaction during network I/O."""
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from threading import Lock
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from ..db import session_scope
-from ..models import Movie, now
+from ..models import Movie, MovieStatus, now
 from ..settings import load_settings
 from ..sources.douban import DoubanError
 from ..sources.tmdb import TMDBError
 from .clients import make_douban, make_tmdb
 from .movies import apply_douban, apply_tmdb
+from .checker import apply_availability
 
 log = logging.getLogger(__name__)
 _pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='movie-metadata')
@@ -31,6 +33,21 @@ def queue_metadata(movie_id: int) -> bool:
 def metadata_pending(movie_id: int) -> bool:
     with _lock:
         return movie_id in _pending
+
+
+def queue_candidate_backfill() -> bool:
+    """One legacy candidate per scheduler tick; failed lookups wait a day."""
+    with _lock:
+        if _pending:
+            return False
+    with session_scope() as session:
+        movie_id = session.scalar(select(Movie.id).where(
+            Movie.status == MovieStatus.CANDIDATE,
+            Movie.last_checked_at.is_(None),
+            or_(Movie.tmdb_id.is_not(None), Movie.douban_id.is_not(None), Movie.imdb_id.is_not(None)),
+            or_(Movie.metadata_checked_at.is_(None), Movie.metadata_checked_at < now() - timedelta(days=1)),
+        ).order_by(Movie.id).limit(1))
+    return queue_metadata(movie_id) if movie_id is not None else False
 
 
 def refresh_metadata(movie_id: int) -> None:
@@ -57,7 +74,7 @@ def refresh_metadata(movie_id: int) -> None:
                 if found and (imdb_id or (found.year == year and title in (found.title, found.original_title))):
                     tmdb_id = found.id
             if tmdb_id:
-                tmdb_info = client.movie(tmdb_id)
+                tmdb_info = client.movie(tmdb_id, settings.check.provider_regions)
         except TMDBError:
             notes.append('TMDB 资料暂时无法获取')
         finally:
@@ -91,6 +108,7 @@ def refresh_metadata(movie_id: int) -> None:
         details['message'] = '；'.join(notes) or ('资料已更新' if douban_info or tmdb_info else '暂未匹配到详细资料，可稍后重试')
         row.details = details
         row.metadata_checked_at = now()
+        apply_availability(session, row, tmdb_info, douban_info)
     from .pt import revalidate_cached_candidates
     revalidate_cached_candidates(movie_ids=[movie_id])
 

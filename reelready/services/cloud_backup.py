@@ -1,4 +1,4 @@
-"""Upload the record export to a GitHub repository and / or a WebDAV folder."""
+"""Upload the selected backup scope to GitHub and / or WebDAV."""
 
 import base64
 import json
@@ -42,7 +42,7 @@ def run_cloud_backup(settings: AppSettings) -> str:
     if not targets:
         return "未启用任何备份目标，已跳过"
     name = backup_filename()
-    body = json.dumps(export_data(), ensure_ascii=False, indent=1).encode()
+    body = json.dumps(export_data(config.scope), ensure_ascii=False, indent=1).encode()
     done, failed = [], []
     for label, upload in targets:
         try:

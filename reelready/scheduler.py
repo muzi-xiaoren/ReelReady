@@ -149,6 +149,10 @@ class Scheduler:
             state = states.get(job.name)
             if _is_due(job, settings, state.last_run_at if state else None, current, state):
                 self._execute(job, None, record=True)
+        # Initial information lookup only: never approves, searches PT or downloads.
+        from .services.movie_metadata import queue_candidate_backfill
+        if not self._stop.is_set():
+            queue_candidate_backfill()
 
     def _execute(self, job: Job, movie_ids: list[int] | None, record: bool) -> None:
         with self._request_lock:

@@ -12,7 +12,7 @@
     window.htmx || document.write('<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"><\/script>');
   </script>
 </head>
-<body hx-boost="false">
+<body hx-boost="false" class="{{ 'library-shell' if gallery_shell }} {% block body_class %}{% endblock %}">
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/movies">
@@ -30,9 +30,14 @@
     </div>
   </header>
 
-  <main class="page">
+  <main class="page {% block page_class %}{% endblock %}">
     {% block content %}{% endblock %}
   </main>
+
+  {% if gallery_shell and nav != 'movies' %}
+    {% include 'partials/gallery_dock.html' %}
+    <div class="gallery-job-shell">{% include 'partials/jobs.html' %}</div>
+  {% endif %}
 
   <div id="toasts" aria-live="polite"></div>
   <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message confirm-description">

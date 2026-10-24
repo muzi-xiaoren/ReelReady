@@ -1,50 +1,27 @@
 {% extends "base.html" %}
 {% from "partials/icons.html" import icon %}
 {% block title %}影片 · ReelReady{% endblock %}
+{% block page_class %}movie-page{% endblock %}
+{% block body_class %}gallery-view{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1>影片</h1>
-    <div class="subtitle">收集近期高分电影，等它上线网络后自动下载</div>
-  </div>
-  <div class="add-bar">
-    <form hx-post="/movies/add" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()">
-      <input type="text" name="ref" placeholder="粘贴豆瓣 / TMDB / IMDb 链接手动添加" required>
-      <select name="status" aria-label="添加到">
-        {% for key, label in add_targets %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
-      </select>
-      <button class="btn btn-primary" type="submit">{{ icon("plus") }}添加</button>
-    </form>
-  </div>
-</div>
-
-{% include "partials/jobs.html" %}
-
-<div class="page-head" style="margin-bottom:16px;align-items:center">
-  <div class="tabs" style="margin:0">
-    {% for key, label, count in tabs %}
-    <a class="tab {{ 'active' if key == tab }}" href="/movies?tab={{ key }}">{{ label }}<span class="count">{{ count }}</span></a>
-    {% endfor %}
-  </div>
-  <form class="search" method="get" action="/movies">
-    {{ icon("search") }}
-    <input type="hidden" name="tab" value="{{ tab }}">
-    <input type="text" name="q" value="{{ q }}" placeholder="搜索片名">
-  </form>
-</div>
-
+<h1 class="gallery-sr-only">影片</h1>
+<div id="movie-live-view" data-live-movies data-revision="{{ movie_revision }}">
 {% if movies %}
-<div class="movie-grid">
+{% set gallery_columns = [movies | length, 6] | min %}
+<div class="movie-grid" data-count="{{ movies | length }}" style="--gallery-grid-max: {{ gallery_columns * 340 + (gallery_columns - 1) * 22 }}px">
   {% for m in movies %}{% include "partials/movie_card.html" %}{% endfor %}
 </div>
 {% else %}
 <div class="empty">
   {{ icon("film") }}
-  {% if q %}
+  {% if tab == 'candidate' and availability != 'all' %}
+    <div class="title">这个分类下暂无{{ '匹配的' if q else '' }}影片</div>
+    <div>可以切换其他状态，或<a href="{{ clear_filter_url }}">清除筛选</a>查看。</div>
+  {% elif q %}
     <div class="title">没有找到「{{ q }}」</div>
   {% elif tab == "candidate" %}
     <div class="title">暂时没有待确认的影片</div>
-    <div>收集任务会定期把院线高分片放到这里，你可以点上方的 ▶ 立即收集一次。</div>
+    <div>收集任务会定期补充影片，也可以打开底部「更多 → 后台任务」立即收集。</div>
   {% elif tab == "monitoring" %}
     <div class="title">还没有监测中的影片</div>
     <div>到「待确认」里挑几部，或者直接粘贴豆瓣链接添加。</div>
@@ -53,11 +30,14 @@
     <div>监测中的影片一旦在 PT 站出现符合要求的资源，就会自动推送到 qBittorrent。</div>
   {% elif tab == "watched" %}
     <div class="title">还没有标记看过的影片</div>
-    <div>点击影片上的眼睛按钮标记已看过。保留影片及下载记录，暂停监测和自动下载，随时可以恢复。</div>
+    <div>进入影片详情可标记已看过，保留记录并暂停监测和自动下载，随时可以恢复。</div>
   {% else %}
     <div class="title">黑名单是空的</div>
     <div>移入黑名单的影片不会再被收集。</div>
   {% endif %}
 </div>
 {% endif %}
+{% include 'partials/gallery_dock.html' %}
+</div>
+<div class="gallery-job-shell">{% include 'partials/jobs.html' %}</div>
 {% endblock %}

@@ -8,11 +8,11 @@ from sqlalchemy import select
 from ..db import session_scope
 from ..models import Movie, MovieStatus, Stage, now
 from ..settings import AppSettings
-from ..sources.douban import DoubanClient, DoubanError
-from ..sources.tmdb import TMDBClient, TMDBError
+from ..sources.douban import DoubanClient, DoubanError, DoubanMovie
+from ..sources.tmdb import TMDBClient, TMDBError, TMDBMovie
 from .clients import make_douban, make_tmdb
 from .events import add_event
-from .movies import apply_tmdb, assign_ids, link_ids
+from .movies import apply_tmdb, assign_ids, link_ids, same_douban_movie
 
 log = logging.getLogger(__name__)
 
@@ -91,13 +91,39 @@ def _check_one(settings: AppSettings, movie_id: int, tmdb: TMDBClient | None, do
         return _advance(session, movie)
 
 
-def _advance(session, movie: Movie) -> bool:
+def apply_availability(session, movie: Movie, tmdb_info: TMDBMovie | None = None,
+                       douban_info: DoubanMovie | None = None) -> bool:
+    """Use fetched metadata without approving a candidate or creating notifications."""
+    valid_tmdb = isinstance(tmdb_info, TMDBMovie) and movie.tmdb_id == tmdb_info.id
+    valid_douban = isinstance(douban_info, DoubanMovie) and movie.douban_id == douban_info.id and (
+        not movie.tmdb_id or same_douban_movie(movie, douban_info))
+    if not (valid_tmdb or valid_douban):
+        return False
+    dates, providers = [], []
+    if valid_tmdb:
+        if tmdb_info.digital_date:
+            dates.append(tmdb_info.digital_date)
+        providers.extend(tmdb_info.providers)
+    if valid_douban:
+        providers[:0] = [f'国内 · {name}' for name in douban_info.vendors]
+        if douban_info.pre_playable_date and (match := _DATE.search(douban_info.pre_playable_date)):
+            dates.append(match.group())
+    if dates:
+        movie.digital_date = min(dates)
+    if providers:
+        movie.streaming = list(dict.fromkeys(providers))
+    movie.last_checked_at = now()
+    _advance(session, movie, notify=False)
+    return True
+
+
+def _advance(session, movie: Movie, *, notify: bool = True) -> bool:
     from .pt import release_wait_reason
 
     if movie.stage >= Stage.DOWNLOADED:
         return False
     target = Stage.IN_CINEMA
-    if movie.streaming and not release_wait_reason(movie):
+    if (movie.streaming or movie.digital_date) and not release_wait_reason(movie):
         target = Stage.STREAMING
     elif movie.digital_date:
         target = Stage.DATED
@@ -107,10 +133,13 @@ def _advance(session, movie: Movie) -> bool:
             movie.stage = target
         return False
     movie.stage = target
+    if not notify:
+        return True
     if target == Stage.STREAMING:
         platforms = "、".join(movie.streaming[:6])
         more = f" 等 {len(movie.streaming)} 个平台" if len(movie.streaming) > 6 else ""
-        add_event(session, "streaming", f"《{movie.title}》已上线", f"可在 {platforms}{more} 观看", movie_id=movie.id)
+        message = f"可在 {platforms}{more} 观看" if platforms else f"已到数字版日期 {movie.digital_date}"
+        add_event(session, "streaming", f"《{movie.title}》已上线", message, movie_id=movie.id)
     else:
         add_event(
             session, "dated", f"《{movie.title}》已定档", f"预计 {movie.digital_date} 上线数字版", movie_id=movie.id

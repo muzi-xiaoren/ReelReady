@@ -1,21 +1,36 @@
 {% from "partials/icons.html" import icon %}
-<div class="jobs" id="jobs" hx-get="/jobs" hx-trigger="every 20s" hx-swap="outerHTML">
+{% set running = jobs | selectattr('running') | list %}
+{% set errors = jobs | selectattr('status', 'equalto', 'error') | rejectattr('running') | list %}
+{% set upcoming = jobs | selectattr('next_run') | sort(attribute='next_run') %}
+<details class="jobs-panel" id="jobs" hx-get="/jobs" hx-trigger="every 20s" hx-swap="outerHTML" hx-on::before-request="if(document.hidden) event.preventDefault()">
+  <summary class="jobs-summary" title="{% if running %}{{ running[0].label }}运行中{% elif errors %}{{ errors | length }} 项异常 · {{ errors[0].label }}{% else %}查看后台任务{% endif %}">
+    <span class="jobs-summary-title"><span class="job-dot {{ 'running' if running else 'error' if errors else 'ok' }}"></span>后台任务</span>
+    <span class="jobs-summary-state {{ 'error' if errors and not running }}">{% if running %}{{ running[0].label }} · 运行中{% elif errors %}{{ errors | length }} 项异常 · {{ errors[0].label }}{% else %}当前空闲{% endif %}</span>
+    <span class="jobs-summary-action"><span class="jobs-chevron">⌄</span></span>
+  </summary>
+  <div class="jobs-popover">
+  <div class="jobs-popover-head"><strong>后台任务</strong><span class="faint">{% if upcoming and not running %}下次{{ upcoming[0].label }} · {{ upcoming[0].next_run | when }}{% else %}{{ jobs | length }} 项任务依次执行{% endif %}</span><button class="btn btn-ghost btn-icon btn-sm gallery-jobs-close" type="button" data-gallery-jobs-close aria-label="关闭后台任务">{{ icon('x') }}</button></div>
+  {% if errors and not running %}<div class="jobs-error-hint" title="{{ errors[0].message or '' }}">{{ errors[0].message or '展开任务查看失败详情' }}</div>{% endif %}
+  <div class="job-grid">
   {% for job in jobs %}
   <div class="job">
     <span class="job-dot {{ 'running' if job.running else (job.status or '') }}"></span>
     <div class="job-body">
       <div class="job-name">{{ job.label }}</div>
-      <div class="job-meta" title="{{ job.message or '' }}">
+      <div class="job-meta job-message" title="{{ job.message or '' }}">
         {% if job.running %}正在运行…
         {% elif job.last_run %}{{ job.last_run | when }} · {{ job.message or '' }}
         {% else %}尚未运行{% endif %}
       </div>
       {% if not job.running and job.next_run %}
       <div class="job-meta">下次 {{ job.next_run | when }}</div>
+      {% elif not job.running and not job.enabled %}<div class="job-meta">定时任务未开启</div>
       {% endif %}
     </div>
-    <button class="btn btn-ghost btn-icon btn-sm" title="立即运行"
+    <button class="btn btn-ghost btn-icon btn-sm" type="button" title="{{ '立即运行' if job.manual_available else '请先配置备份目标' }}" aria-label="立即运行{{ job.label }}" {{ 'disabled' if not job.manual_available }}
             hx-post="/jobs/{{ job.name }}/run" hx-swap="none">{{ icon("play") }}</button>
   </div>
   {% endfor %}
-</div>
+  </div>
+  </div>
+</details>

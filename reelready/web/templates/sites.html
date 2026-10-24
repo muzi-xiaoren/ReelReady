@@ -2,15 +2,19 @@
 {% from "partials/icons.html" import icon %}
 {% from "partials/site_logo.html" import site_logo %}
 {% block title %}站点 · ReelReady{% endblock %}
+{% block body_class %}management-view sites-view{% endblock %}
+{% block page_class %}management-page sites-page{% endblock %}
 {% block content %}
-<div class="page-head sites-page-head">
-  <div><h1>站点</h1><div class="subtitle">连接你的 PT 站，让好电影自动入库。</div></div>
+<div class="page-head sites-page-head management-head">
+  <div><a class="management-back" href="/movies">{{ icon('arrow-left') }}影片库</a><h1>站点</h1></div>
+  <button class="btn btn-sm" type="button" data-manual-site>{{ icon('plus') }}添加站点</button>
   <span class="sites-total" id="sites-total" hx-get="/sites" hx-select="#sites-total" hx-target="this" hx-swap="outerHTML" hx-trigger="sitesChanged from:body">{{ sites | length }} 个已添加站点</span>
 </div>
 
 <div class="sites-layout">
-  <section class="panel sync-panel">
-    <div class="panel-head"><h2>CookieCloud</h2><span class="pill {{ 'ok' if synced_at else 'unknown' }}">{{ '已连接' if synced_at else '等待同步' }}</span></div>
+  <details class="panel sync-panel" {{ 'open' if not synced_at }}>
+    <summary class="sync-summary"><span class="job-dot {{ 'ok' if synced_at }}"></span><strong>CookieCloud</strong><span>{{ '同步正常 · ' ~ (synced_at | when) if synced_at else '等待连接浏览器扩展' }}</span>{{ icon('chevron-down') }}</summary>
+    <div class="sync-configuration">
     <p class="section-description">浏览器登录一次，站点 Cookie 自动更新。</p>
     <div class="sync-status">
       <span class="sync-status-icon">{{ icon("refresh") }}</span>
@@ -32,9 +36,14 @@
       <p class="help">扩展和 ReelReady 在同一台电脑上时，可使用 localhost。</p>
     </details>
     <div class="sync-footer"><span class="faint small">配置保存在本机</span><button class="btn btn-sm btn-ghost" hx-post="/sites/cookiecloud/regenerate" hx-swap="none" hx-confirm="重新生成 KEY 和密码？扩展里也需要同步修改。">{{ icon("key") }}重新生成</button></div>
-  </section>
+    </div>
+  </details>
+
+  {% include "partials/connected_sites.html" %}
 
   <section class="panel discovery-panel" id="discovery-panel" hx-get="/sites" hx-select="#discovery-panel" hx-target="this" hx-swap="outerHTML" hx-trigger="sitesChanged from:body" hx-disinherit="hx-select hx-target">
+    <details class="discovery-details" id="discovery-details" data-disclosure-state="discovery" {{ 'open' if not sites }}><summary>发现站点 <span class="heading-count">{{ detected | length }}</span>{{ icon('chevron-down') }}</summary>
+    <div class="discovery-content">
     <div class="panel-head"><h2>发现站点 <span class="heading-count">{{ detected | length }}</span></h2><button class="btn btn-sm" type="button" data-manual-site>{{ icon("plus") }}手动添加站点</button></div>
     <p class="section-description">仅显示含登录 Cookie 的候选，是否仍有效需连接测试确认。</p>
     <div class="site-search">{{ icon("search") }}<input type="text" placeholder="搜索站点名称或域名" aria-label="搜索发现的站点" data-site-search autocomplete="off" id="site-search" hx-preserve></div>
@@ -79,8 +88,8 @@
       </form>
     </details>
     </div>
+    </div></details>
   </section>
 </div>
 
-{% include "partials/connected_sites.html" %}
 {% endblock %}

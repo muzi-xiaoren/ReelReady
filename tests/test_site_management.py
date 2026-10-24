@@ -1,4 +1,5 @@
 import json
+import re
 import tempfile
 import threading
 import time
@@ -163,7 +164,8 @@ class SiteManagementTests(unittest.TestCase):
         self.assertIn('2026-08-11', html)
         self.assertIn('演员甲', html)
         self.assertIn('主角', html)
-        self.assertIn('hx-trigger="every 2s"', html)
+        self.assertIn('data-pending="true"', html)
+        self.assertIn('id="movie-live-view"', html)
 
     def test_early_search_switch_hides_cached_torrents_and_blocks_manual_search(self):
         from datetime import date, timedelta
@@ -441,7 +443,9 @@ class SiteManagementTests(unittest.TestCase):
         self.assertIn('fixture', response.text)
         movie_queries = [statement for statement in statements if 'FROM movies' in statement]
         self.assertTrue(movie_queries)
-        self.assertFalse(any('movies.details' in q or 'movies.last_pt_candidates' in q or 'movies.overview' in q for q in movie_queries))
+        # A scalar JSON flag is fine; the full cast/metadata blob must remain deferred.
+        trimmed = [re.sub(r'json_extract\(movies\.details,\s*\?\)', '', q) for q in movie_queries]
+        self.assertFalse(any('movies.details' in q or 'movies.last_pt_candidates' in q or 'movies.overview' in q for q in trimmed))
 
     def test_duplicate_migration_backs_up_and_preserves_movie_references(self):
         site, _ = self.add()

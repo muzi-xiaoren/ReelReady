@@ -81,7 +81,7 @@ class Movie(Base):
     downloaded: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime)
@@ -89,7 +89,13 @@ class Movie(Base):
 
     @property
     def stage_label(self) -> str:
+        if self.stage == Stage.IN_CINEMA:
+            return '待检测' if self.availability_pending else '暂未确认上线'
         return STAGE_LABELS[Stage(self.stage)]
+
+    @property
+    def availability_pending(self) -> bool:
+        return self.stage == Stage.IN_CINEMA and not self.last_checked_at and not self.digital_date and not self.streaming
 
     @property
     def display_title(self) -> str:

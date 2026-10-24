@@ -1,0 +1,41 @@
+{% from 'partials/icons.html' import icon %}
+{% from 'partials/setting_field.html' import setting_field %}
+{% set values = namespace(items={}) %}
+{% for field in fields %}{% set _ = values.items.update({field.name: field}) %}{% endfor %}
+{% macro backup_field(name) %}{{ setting_field('backup', values.items[name]) }}{% endmacro %}
+{% macro backup_switch(name, label, controls=none) %}
+<label class="switch cloud-toggle"><input type="checkbox" name="{{ name }}" {{ 'checked' if values.items[name].value }} {% if controls %}data-cloud-toggle="{{ controls }}" aria-controls="cloud-{{ controls }}-body" aria-expanded="{{ 'true' if values.items[name].value else 'false' }}"{% endif %}><span class="track"></span><span>{{ label }}</span></label>
+{% endmacro %}
+
+<div class="cloud-heading">
+  <div><h2>云备份</h2><p class="help">把备份保存在你自己的存储空间，随时迁移或恢复。</p></div>
+  <button class="btn btn-primary" type="button" hx-post="/backup/run" hx-swap="none" data-settings-test data-backup-run {{ 'disabled' if not backup_job.manual_available }}>{{ icon('download') }}立即备份</button>
+</div>
+<div class="cloud-status {{ 'has-error' if backup_job.status == 'error' }}" role="status">
+  <div><span class="job-dot {{ 'running' if backup_job.running else backup_job.status or '' }}"></span><span>{{ '正在备份…' if backup_job.running else '上次备份成功' if backup_job.status == 'ok' else '上次备份失败' if backup_job.status == 'error' else '尚未备份' }}</span>{% if backup_job.last_run %}<time class="faint">{{ backup_job.last_run | when }}</time>{% endif %}</div>
+  <span class="faint">{% if backup_job.next_run %}下次 {{ backup_job.next_run | when }}{% else %}定时备份未开启{% endif %}</span>
+</div>
+{% if backup_job.message %}<details class="cloud-last-result"><summary>查看上次结果</summary><p>{{ backup_job.message }}</p></details>{% endif %}
+
+<div class="cloud-policy">
+  <div class="cloud-policy-head"><div><h3>备份策略</h3><p class="help">关闭定时备份后，仍可点击上方按钮手动备份。</p></div>{{ backup_switch('auto_enabled', '定时备份') }}</div>
+  <div class="cloud-policy-fields">{{ backup_field('scope') }}{{ backup_field('interval_hours') }}{{ backup_field('keep_count') }}</div>
+  <p class="help cloud-scope-warning" data-cloud-full-warning {{ 'hidden' if values.items.scope.value != 'full' }}>全部信息包含密码、API Key 和 Cookie，请使用自己的私有仓库或可信存储，勿公开分享备份。</p>
+</div>
+
+<div class="cloud-targets">
+  <section class="cloud-target" data-cloud-target="github">
+    <div class="cloud-target-head"><div class="cloud-target-title"><span class="cloud-target-mark">GH</span><div><h3>GitHub</h3><span class="faint small" data-cloud-target-status>{{ '已启用' if values.items.github_enabled.value else '未启用' }}</span></div></div>{{ backup_switch('github_enabled', '启用 GitHub', 'github') }}</div>
+    <div class="cloud-target-body" id="cloud-github-body" {{ 'hidden' if not values.items.github_enabled.value }}>
+      {{ backup_field('github_repo') }}{{ backup_field('github_token') }}
+      <details class="cloud-advanced"><summary>高级设置<span>分支、目录和代理</span></summary><div class="cloud-advanced-fields">{{ backup_field('github_branch') }}{{ backup_field('github_path') }}{{ backup_field('github_use_proxy') }}</div></details>
+    </div>
+  </section>
+  <section class="cloud-target" data-cloud-target="webdav">
+    <div class="cloud-target-head"><div class="cloud-target-title"><span class="cloud-target-mark webdav">DAV</span><div><h3>WebDAV</h3><span class="faint small" data-cloud-target-status>{{ '已启用' if values.items.webdav_enabled.value else '未启用' }}</span></div></div>{{ backup_switch('webdav_enabled', '启用 WebDAV', 'webdav') }}</div>
+    <div class="cloud-target-body" id="cloud-webdav-body" {{ 'hidden' if not values.items.webdav_enabled.value }}>
+      {{ backup_field('webdav_url') }}{{ backup_field('webdav_username') }}{{ backup_field('webdav_password') }}
+    </div>
+  </section>
+</div>
+<div class="cloud-footer"><button class="autosave-status" type="button" data-save-status role="status" aria-live="polite">已保存</button><span class="help">可同时启用两个目标；收起配置不会清空已填写的信息。</span></div>

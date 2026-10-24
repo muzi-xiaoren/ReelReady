@@ -68,7 +68,7 @@ class RereleaseCollectionTests(unittest.TestCase):
         self.assertEqual(self.collect(), 0)
         self.assertEqual(self.movies(), [])
         self.assertEqual(self.events(), [])
-        self.tmdb.movie.assert_called_once_with(396535)
+        self.tmdb.movie.assert_called_once_with(396535, self.settings.check.provider_regions)
         self.douban.find.assert_not_called()
 
     def test_enabled_keeps_primary_year_and_all_regional_dates_and_deduplicates(self):

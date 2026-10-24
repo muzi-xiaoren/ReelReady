@@ -1,28 +1,12 @@
 {% from "partials/icons.html" import icon %}
 <article class="movie-card">
-  <a class="poster" href="/movies/{{ m.id }}">
+  <div class="movie-poster-frame">
+  <a class="poster" href="/movies/{{ m.id }}" aria-label="查看《{{ m.title }}》详情">
     <img src="/posters/{{ m.id }}" alt="" loading="lazy" referrerpolicy="no-referrer"
          onerror="this.onerror=null;this.src='/static/poster-placeholder.svg'">
-    <span class="stage"><span class="pill stage-{{ m.stage }}">{{ m.stage_label }}</span></span>
-    <span class="ratings">
-      {% if m.douban_rating %}<span class="rating douban"><span class="src">豆</span>{{ "%.1f"|format(m.douban_rating) }}</span>{% endif %}
-      {% if m.tmdb_rating %}<span class="rating tmdb"><span class="src">TMDB</span>{{ "%.1f"|format(m.tmdb_rating) }}</span>{% endif %}
-    </span>
+    <span class="stage"><span class="pill stage-{{ m.stage }}">{{ m.stage_label }}</span>{% if m.id in rerelease_ids %} <span class="pill no-dot">重映</span>{% endif %}</span>
+    <span class="movie-sub">{{ m.year or '' }}{% if m.original_title and m.original_title != m.title %} · {{ m.original_title }}{% endif %}</span>
   </a>
-  <div class="movie-info">
-    <a class="movie-title" href="/movies/{{ m.id }}">{{ m.title }}</a>
-    <div class="movie-sub">{{ m.year or "" }}{% if m.original_title and m.original_title != m.title %} · {{ m.original_title }}{% endif %}</div>
-    {% if m.status == "completed" and m.downloaded %}
-      <div class="movie-note">{{ m.downloaded.title }}</div>
-    {% elif m.status == "monitoring" %}
-      {% if m.streaming %}
-        <div class="movie-note">{{ m.streaming[:3] | join("、") }}{% if m.streaming|length > 3 %} 等{% endif %}</div>
-      {% elif m.digital_date %}
-        <div class="movie-note">预计 {{ m.digital_date }} 上线</div>
-      {% endif %}
-      {% if m.last_pt_summary %}<div class="movie-note faint">PT：{{ m.last_pt_summary }}</div>{% endif %}
-    {% endif %}
-  </div>
   <div class="movie-actions">
     {% if m.status == "candidate" %}
       <button class="btn btn-primary btn-sm" hx-post="/movies/{{ m.id }}/approve"
@@ -46,5 +30,13 @@
       <button class="btn btn-sm btn-icon" title="已看过（暂停监测和自动下载）" hx-post="/movies/{{ m.id }}/watched"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("eye") }}</button>
     {% endif %}
+  </div>
+  </div>
+  <div class="movie-info">
+    <a class="movie-title" href="/movies/{{ m.id }}" title="{{ m.title }}">{{ m.title }}</a>
+    <span class="movie-caption-ratings">
+      {% if m.douban_rating %}<span class="gallery-rating douban" aria-label="豆瓣评分 {{ '%.1f' | format(m.douban_rating) }}"><span class="src">豆</span> {{ '%.1f' | format(m.douban_rating) }}</span>{% endif %}
+      {% if m.tmdb_rating %}<span class="gallery-rating tmdb" aria-label="TMDB 评分 {{ '%.1f' | format(m.tmdb_rating) }}"><span class="src">TMDB</span> {{ '%.1f' | format(m.tmdb_rating) }}</span>{% endif %}
+    </span>
   </div>
 </article>
