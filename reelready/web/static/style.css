@@ -961,7 +961,7 @@ td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .gallery-view .movie-card:hover .poster::after, .gallery-view .movie-card:focus-within .poster::after { opacity: 1; }
 .gallery-dock { position: fixed; z-index: 40; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-elev); box-shadow: var(--shadow-hover); }
 .gallery-dock-shell { position: fixed; z-index: 40; left: 50%; bottom: 0; transform: translateX(-50%); width: min(520px, 100%); height: calc(90px + env(safe-area-inset-bottom)); pointer-events: none; }
-.gallery-dock-shell .gallery-dock { position: absolute; width: max-content; max-width: calc(100vw - 16px); pointer-events: auto; transition: transform 180ms ease, opacity 180ms ease; }
+.gallery-dock-shell .gallery-dock { position: absolute; z-index: 1; width: max-content; max-width: calc(100vw - 16px); pointer-events: auto; transition: transform 180ms ease, opacity 180ms ease; }
 .gallery-dock-reveal { display: none; position: absolute; bottom: env(safe-area-inset-bottom); left: 50%; transform: translateX(-50%); width: 72px; height: 22px; align-items: center; justify-content: center; border: 1px solid var(--border); border-bottom: 0; border-radius: 12px 12px 0 0; color: var(--text-faint); background: var(--bg-elev); cursor: pointer; pointer-events: auto; }
 .gallery-dock-reveal svg { width: 16px; height: 16px; }
 .gallery-dock-autohide .gallery-dock-reveal { display: flex; }
@@ -1039,7 +1039,7 @@ td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .management-head h1 { font-size: 24px; margin-top: 10px; }
 .management-back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-faint); font-size: 12px; }
 .management-back svg { width: 14px; height: 14px; }
-.gallery-dock-reveal { width: min(360px, calc(100vw - 24px)); height: 20px; border: 0; border-radius: 0; background: transparent; color: transparent; }
+.gallery-dock-reveal { width: 100%; height: 100%; bottom: 0; border: 0; border-radius: 0; background: transparent; color: transparent; }
 .gallery-dock-reveal:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .gallery-dock-autohide:not(.gallery-dock-revealed) .gallery-dock { visibility: hidden; }
 .gallery-dock .gallery-orbit { position: absolute; z-index: 41; left: calc(50% - 119px); bottom: calc(50% - 2px); width: 0; height: 0; padding: 0; border: 0; background: transparent; box-shadow: none; transform: none; overflow: visible; }

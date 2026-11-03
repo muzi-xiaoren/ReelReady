@@ -114,11 +114,11 @@
   window.addEventListener('hashchange', function () { selectSettingsGroup(location.hash.slice(1), false); });
   selectSettingsGroup(location.hash.slice(1), false);
 
-  var galleryCaptionsHidden = false, galleryDockAutoHide = false, galleryDockRevealed = false;
+  var galleryCaptionsHidden = false, galleryDockAutoHide = true, galleryDockRevealed = false;
   var galleryMenus = {category: false, more: false}, galleryCategory = 'monitoring';
   try {
     galleryCaptionsHidden = localStorage.getItem('reelready.gallery.captionsHidden') === 'true';
-    galleryDockAutoHide = localStorage.getItem('reelready.gallery.dockAutoHide') === 'true';
+    galleryDockAutoHide = localStorage.getItem('reelready.gallery.dockPinned') !== 'true';
   } catch (_) { /* Browser preferences may be unavailable in private mode. */ }
   try {
     galleryMenus = JSON.parse(sessionStorage.getItem('reelready.gallery.menus') || '{}') || {};
@@ -158,8 +158,8 @@
     }
     var collapse = document.querySelector('[data-gallery-collapse]');
     if (collapse) {
-      collapse.setAttribute('aria-pressed', String(galleryDockAutoHide));
-      collapse.title = galleryDockAutoHide ? '固定显示工具栏' : '自动收起工具栏，移到页面底部展开';
+      collapse.setAttribute('aria-pressed', String(!galleryDockAutoHide));
+      collapse.title = galleryDockAutoHide ? '固定显示工具栏' : '取消固定，鼠标移开后自动收起';
       collapse.setAttribute('aria-label', galleryDockAutoHide ? '固定显示工具栏' : '自动收起工具栏');
     }
     var reveal = document.querySelector('[data-gallery-reveal]');
@@ -167,7 +167,9 @@
   }
   function hideGalleryDock() {
     var shell = document.querySelector('.gallery-dock-shell');
-    if (!shell || !galleryDockAutoHide || shell.matches(':hover') || shell.querySelector('[data-gallery-panel][open], input:focus, select:focus')) return;
+    if (!shell || !galleryDockAutoHide || shell.matches(':hover')) return;
+    // An open category/more menu is remembered, but does not pin the toolbar.
+    if (shell.contains(document.activeElement)) document.activeElement.blur();
     galleryDockRevealed = false;
     syncGalleryPreferences();
   }
@@ -179,11 +181,12 @@
     }
     if (evt.target.closest('[data-gallery-collapse]')) {
       galleryDockAutoHide = !galleryDockAutoHide;
-      galleryDockRevealed = false;
+      galleryDockRevealed = true;
       document.querySelectorAll('[data-gallery-panel][open]:not([data-gallery-persistent])').forEach(function (panel) { panel.open = false; });
       if (galleryDockAutoHide) evt.target.closest('button').blur();
-      try { localStorage.setItem('reelready.gallery.dockAutoHide', String(galleryDockAutoHide)); } catch (_) {}
+      try { localStorage.setItem('reelready.gallery.dockPinned', String(!galleryDockAutoHide)); } catch (_) {}
       syncGalleryPreferences();
+      setTimeout(hideGalleryDock, 180);
     }
     if (evt.target.closest('[data-gallery-reveal]')) {
       galleryDockRevealed = true;
@@ -199,7 +202,7 @@
   });
   document.addEventListener('pointerout', function (evt) {
     var shell = evt.target.closest('.gallery-dock-shell');
-    if (shell && !shell.contains(evt.relatedTarget)) hideGalleryDock();
+    if (shell && !shell.contains(evt.relatedTarget)) setTimeout(hideGalleryDock, 180);
   });
   document.addEventListener('focusin', function (evt) {
     if (evt.target.matches('[data-gallery-reveal]')) {
@@ -209,9 +212,11 @@
   });
   document.addEventListener('focusout', function (evt) {
     var shell = evt.target.closest('.gallery-dock-shell');
-    if (shell && !shell.contains(evt.relatedTarget)) hideGalleryDock();
+    if (shell && !shell.contains(evt.relatedTarget)) setTimeout(hideGalleryDock, 180);
   });
   syncGalleryPreferences();
+  // Navigation can restore the menu choices, never a stale temporary reveal.
+  setTimeout(hideGalleryDock, 180);
 
   var jobsExpanded = false;
   function restoreJobsPanel() {
