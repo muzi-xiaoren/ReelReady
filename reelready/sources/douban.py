@@ -4,7 +4,9 @@ import re
 import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any
+from urllib.parse import unquote, urlsplit
 
 import httpx
 
@@ -73,6 +75,45 @@ def _cover(item: dict[str, Any]) -> str | None:
     if isinstance(cover, dict) and "doubanio.com" in str(cover.get("url") or ""):
         return cover["url"]
     return item.get("cover_url")
+
+
+def _playable_vendors(data: dict[str, Any]) -> list[str]:
+    """Only concrete playback links count; advertisements/search/preorders do not."""
+    upcoming = str(data.get('pre_playable_date') or '')[:10]
+    if upcoming:
+        try:
+            if date.fromisoformat(upcoming) > date.today():
+                return []
+        except ValueError:
+            return []  # An unparseable announced date cannot confirm availability.
+    names = []
+    for vendor in data.get('vendors') or []:
+        if not isinstance(vendor, dict) or not vendor.get('title'):
+            continue
+        if vendor.get('is_ad') or vendor.get('accessible') is False:
+            continue
+        release = str(vendor.get('pre_release_desc') or '').strip()
+        if release:
+            match = re.search(r'(\d{4})[-年/](\d{1,2})[-月/](\d{1,2})', release)
+            try:
+                if not match or date(*map(int, match.groups())) > date.today():
+                    continue
+            except ValueError:
+                continue
+        # An app launcher or empty URL says nothing about this movie's availability.
+        link = unquote(str(vendor.get('url') or vendor.get('uri') or ''))
+        try:
+            parsed = urlsplit(link)
+        except ValueError:
+            continue
+        if parsed.scheme not in ('http', 'https') or not parsed.hostname:
+            continue
+        if parsed.path in ('', '/') and not parsed.query and not parsed.fragment:
+            continue
+        if re.search(r'(?:^|[/#?=&._-])search(?:$|[/#?=&._-])', link, re.I):
+            continue
+        names.append(vendor['title'])
+    return list(dict.fromkeys(names))
 
 
 class DoubanClient:
@@ -202,7 +243,7 @@ class DoubanClient:
         data = self._get(f"/movie/{douban_id}")
         details = douban_details(data)
         rating, votes = _rating(data)
-        vendors = [v.get("title") for v in data.get("vendors") or [] if v.get("title")]
+        vendors = _playable_vendors(data)
         return DoubanMovie(
             id=str(data.get("id") or douban_id),
             title=data.get("title") or "",

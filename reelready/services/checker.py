@@ -60,16 +60,13 @@ def _check_one(settings: AppSettings, movie_id: int, tmdb: TMDBClient | None, do
         if not (movie.tmdb_id and movie.douban_id):
             movie = link_ids(session, movie, tmdb, douban)
 
-        digital_dates: list[str] = []
-        streaming: list[str] = []
+        tmdb_info = douban_info = None
         if tmdb is not None and movie.tmdb_id:
             try:
                 detail = tmdb.movie(movie.tmdb_id, settings.check.provider_regions)
                 apply_tmdb(movie, detail)
                 movie = assign_ids(session, movie, imdb_id=detail.imdb_id)
-                if detail.digital_date:
-                    digital_dates.append(detail.digital_date)
-                streaming.extend(detail.providers)
+                tmdb_info = detail
             except TMDBError as exc:
                 log.info("TMDB check failed for %s: %s", movie.title, exc)
         if movie.douban_id:
@@ -77,18 +74,35 @@ def _check_one(settings: AppSettings, movie_id: int, tmdb: TMDBClient | None, do
                 info = douban.detail(movie.douban_id)
                 movie.douban_rating = info.rating
                 movie.douban_votes = info.votes
-                streaming[:0] = [f"国内 · {name}" for name in info.vendors]
-                if info.pre_playable_date and (m := _DATE.search(info.pre_playable_date)):
-                    digital_dates.append(m.group(0))
+                douban_info = info
             except DoubanError as exc:
                 log.info("Douban check failed for %s: %s", movie.title, exc)
 
-        if digital_dates:
-            movie.digital_date = min(digital_dates)
-        if streaming:
-            movie.streaming = streaming
+        _store_availability(movie, tmdb_info, douban_info)
         movie.last_checked_at = now()
         return _advance(session, movie)
+
+
+def _store_availability(movie: Movie, tmdb_info: TMDBMovie | None,
+                        douban_info: DoubanMovie | None) -> None:
+    # Replace evidence for each successful source, including an empty result.
+    # Preserve the other source on failure; never keep a retracted vendor forever.
+    providers = list(movie.streaming or [])
+    dates = []
+    if tmdb_info is not None:
+        providers = [name for name in providers if name.startswith('国内 · ')]
+        providers.extend(tmdb_info.providers)
+        if tmdb_info.digital_date:
+            dates.append(tmdb_info.digital_date)
+    if douban_info is not None:
+        providers = [name for name in providers if not name.startswith('国内 · ')]
+        providers[:0] = [f'国内 · {name}' for name in douban_info.vendors]
+        if douban_info.pre_playable_date and (match := _DATE.search(douban_info.pre_playable_date)):
+            dates.append(match.group())
+    if tmdb_info is not None or douban_info is not None:
+        movie.streaming = list(dict.fromkeys(providers))
+    if dates:
+        movie.digital_date = min(dates)
 
 
 def apply_availability(session, movie: Movie, tmdb_info: TMDBMovie | None = None,
@@ -99,19 +113,7 @@ def apply_availability(session, movie: Movie, tmdb_info: TMDBMovie | None = None
         not movie.tmdb_id or same_douban_movie(movie, douban_info))
     if not (valid_tmdb or valid_douban):
         return False
-    dates, providers = [], []
-    if valid_tmdb:
-        if tmdb_info.digital_date:
-            dates.append(tmdb_info.digital_date)
-        providers.extend(tmdb_info.providers)
-    if valid_douban:
-        providers[:0] = [f'国内 · {name}' for name in douban_info.vendors]
-        if douban_info.pre_playable_date and (match := _DATE.search(douban_info.pre_playable_date)):
-            dates.append(match.group())
-    if dates:
-        movie.digital_date = min(dates)
-    if providers:
-        movie.streaming = list(dict.fromkeys(providers))
+    _store_availability(movie, tmdb_info if valid_tmdb else None, douban_info if valid_douban else None)
     movie.last_checked_at = now()
     _advance(session, movie, notify=False)
     return True
@@ -129,7 +131,7 @@ def _advance(session, movie: Movie, *, notify: bool = True) -> bool:
         target = Stage.DATED
     if target <= movie.stage:
         if movie.stage == Stage.STREAMING and target < Stage.STREAMING:
-            # Correct an old preorder-as-streaming classification without an alert.
+            # Withdraw stale/preorder evidence without sending a new release alert.
             movie.stage = target
         return False
     movie.stage = target

@@ -10,12 +10,13 @@ from sqlalchemy.orm import sessionmaker
 
 from reelready import config, db
 from reelready.models import Event, Movie, MovieStatus, Stage
-from reelready.services.checker import apply_availability
+from reelready.services.checker import apply_availability, _check_one
 from reelready.services.collector import _new_candidate
 from reelready.services.movie_metadata import queue_candidate_backfill, refresh_metadata
 from reelready.services.movies import infer_rerelease
 from reelready.settings import AppSettings
 from reelready.sources.tmdb import TMDBError, TMDBMovie
+from reelready.sources.douban import DoubanError, DoubanMovie
 from reelready.web.app import create_app
 
 
@@ -86,6 +87,62 @@ class CandidateAvailabilityTests(unittest.TestCase):
         self.assertEqual(row.stage, Stage.IN_CINEMA)
         self.assertEqual(row.stage_label, '暂未确认上线')
         self.assertFalse(row.availability_pending)
+
+    def stale_migu(self, providers=None):
+        with db.session_scope() as session:
+            row = session.get(Movie, self.movie_id)
+            row.douban_id = '36882191'
+            row.stage = Stage.STREAMING
+            row.streaming = providers or ['国内 · 咪咕视频']
+            row.digital_date = (date.today() + timedelta(days=3)).isoformat()
+
+    def test_metadata_refresh_retracts_stale_domestic_vendor_without_alert(self):
+        self.stale_migu()
+        with db.session_scope() as session:
+            row = session.get(Movie, self.movie_id)
+            apply_availability(session, row, douban_info=DoubanMovie(
+                '36882191', 'Fixture', pre_playable_date=row.digital_date))
+        self.assertEqual(self.movie().streaming, [])
+        self.assertEqual(self.movie().stage, Stage.DATED)
+        with db.session_scope() as session:
+            self.assertEqual(list(session.scalars(select(Event))), [])
+
+    def test_refresh_one_source_preserves_other_source_evidence(self):
+        self.stale_migu(['国内 · 咪咕视频', 'US · Netflix(订阅)'])
+        with db.session_scope() as session:
+            row = session.get(Movie, self.movie_id)
+            apply_availability(session, row, douban_info=DoubanMovie('36882191', 'Fixture'))
+        self.assertEqual(self.movie().streaming, ['US · Netflix(订阅)'])
+        self.assertEqual(self.movie().stage, Stage.STREAMING)
+
+    def test_successful_empty_tmdb_refresh_clears_only_tmdb_evidence(self):
+        self.stale_migu(['国内 · 正片平台', 'US · X(订阅)'])
+        self.apply()
+        self.assertEqual(self.movie().streaming, ['国内 · 正片平台'])
+
+    def test_scheduled_check_repairs_old_false_positive_without_notification(self):
+        self.stale_migu()
+        with db.session_scope() as session:
+            session.get(Movie, self.movie_id).status = MovieStatus.MONITORING
+        tmdb, douban = Mock(), Mock()
+        tmdb.movie.side_effect = TMDBError('offline')
+        douban.detail.return_value = DoubanMovie('36882191', 'Fixture', pre_playable_date=self.movie().digital_date)
+        _check_one(AppSettings(), self.movie_id, tmdb, douban)
+        self.assertEqual(self.movie().stage, Stage.DATED)
+        self.assertEqual(self.movie().streaming, [])
+        with db.session_scope() as session:
+            self.assertEqual(list(session.scalars(select(Event))), [])
+
+    def test_failed_checks_preserve_cached_evidence(self):
+        self.stale_migu()
+        with db.session_scope() as session:
+            session.get(Movie, self.movie_id).status = MovieStatus.MONITORING
+        tmdb, douban = Mock(), Mock()
+        tmdb.movie.side_effect = TMDBError('offline')
+        douban.detail.side_effect = DoubanError('offline')
+        _check_one(AppSettings(), self.movie_id, tmdb, douban)
+        self.assertEqual(self.movie().streaming, ['国内 · 咪咕视频'])
+        self.assertEqual(self.movie().stage, Stage.STREAMING)
 
     def test_wrong_source_identity_does_not_count_as_lookup(self):
         with db.session_scope() as session:
