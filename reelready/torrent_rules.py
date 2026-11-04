@@ -223,6 +223,14 @@ def matches_movie(
     if imdb_id and torrent.imdb_id and torrent.imdb_id != imdb_id:
         return False
     normalized_titles = sorted({_normalize(t) for t in titles if t}, key=len, reverse=True)
+    text = f" {_normalize(torrent.title)} {_normalize(torrent.subtitle)} "
+    # Independent metadata is stronger than release-name spelling conventions.
+    # Keep a title anchor as well: a copied parent id alone must not admit an
+    # unrelated concert, collection, or other feature. Search-inferred ids are
+    # not independent evidence and still follow the strict title/year checks.
+    if imdb_id and torrent.imdb_id == imdb_id and torrent.imdb_source in ('metadata', 'detail'):
+        # Require a whole alias, not "奥德赛" inside "终极奥德赛".
+        return any(title and f" {title} " in text for title in normalized_titles)
     name = _normalize(re.sub(r"^(?:\[[^\]]+\]\s*)+", "", torrent.title))
     # Only consider the release-name area, not codec/group numbers after quality tags.
     name = re.split(r'\b(?:4320|2160|1440|1080|720|576|480)[pi]\b|\b(?:web dl|webrip|bluray|blu ray|hdtv|dvdrip)\b', name, maxsplit=1)[0].strip()
@@ -231,8 +239,7 @@ def matches_movie(
         title_spans.extend(match.span() for match in re.finditer(r'(?<![a-z0-9])' + re.escape(title) + r'(?![a-z0-9])', name))
     years = [match for match in re.finditer(r'(?<![a-z0-9])(?:19|20)\d{2}(?![a-z0-9])', name) if not any(start <= match.start() < end for start, end in title_spans)]
     title_year = years[0] if years else None
-    verified_imdb = bool(imdb_id and torrent.imdb_id == imdb_id and torrent.imdb_source != 'search')
-    if year and title_year and not verified_imdb and abs(int(title_year.group()) - year) > 1:
+    if year and title_year and abs(int(title_year.group()) - year) > 1:
         return False
     prefix = name[:title_year.start()].strip() if title_year else name
     latin_titles = [title for title in normalized_titles if re.search(r'[a-z]', title)]
@@ -252,9 +259,6 @@ def matches_movie(
                 latin_match = latin_match or bool(re.fullmatch(r'[a-z0-9]+', leading))
         if not latin_match:
             return False
-    if verified_imdb:
-        return True
-    text = f" {_normalize(torrent.title)} {_normalize(torrent.subtitle)} "
     if year and not title_year:
         # A subtitle may supply the year, but may not supply a missing/wrong main title.
         main_title_matches = any(title and f" {title} " in f" {name} " for title in normalized_titles)
