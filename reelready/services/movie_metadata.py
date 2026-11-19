@@ -117,7 +117,7 @@ def _run(movie_id: int) -> None:
     try:
         refresh_metadata(movie_id)
     except Exception:
-        log.warning('Movie metadata refresh failed for %s', movie_id)
+        log.exception('Movie metadata refresh failed for %s', movie_id)
         with session_scope() as session:
             row = session.get(Movie, movie_id)
             if row:

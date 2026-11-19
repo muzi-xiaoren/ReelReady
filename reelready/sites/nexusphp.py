@@ -23,9 +23,6 @@ _UNITS = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
 _SORT_SIZE = re.compile(r"sort=5\b")
 _SORT_SEEDERS = re.compile(r"sort=7\b")
 
-# Cookies set by NexusPHP on login; used to recognise NexusPHP sites among synced cookies.
-NEXUSPHP_COOKIES = {"c_secure_uid", "c_secure_pass"}
-
 
 def parse_size(text: str) -> int:
     m = _SIZE.search(text)

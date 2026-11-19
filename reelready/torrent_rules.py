@@ -115,10 +115,7 @@ def _allowed_resolutions(rules: TorrentRules) -> list[int]:
             continue
         m = re.search(r"\d+", item)
         if m:
-            value = 2160 if item.strip().upper() in ("4K", "UHD") else int(m.group(0))
-            allowed.append(value)
-        elif item.strip().upper() in ("4K", "UHD"):
-            allowed.append(2160)
+            allowed.append(int(m.group(0)))
     return allowed
 
 

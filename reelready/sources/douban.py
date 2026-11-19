@@ -146,7 +146,10 @@ class DoubanClient:
             self._last_request = time.monotonic()
         if resp.status_code != 200:
             raise DoubanError(f"豆瓣返回 HTTP {resp.status_code}")
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError as exc:
+            raise DoubanError("豆瓣返回的不是有效数据") from exc
         if isinstance(data, dict) and data.get("code") and data.get("msg"):
             raise DoubanError(f"豆瓣接口错误: {data['msg']}")
         return data

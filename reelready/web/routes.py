@@ -29,8 +29,8 @@ from ..notifier import NotifyError, render_single, send_mail
 from ..scheduler import JOBS, next_run, scheduler
 from ..services.clients import make_tmdb
 from ..services.backup import BackupError, export_data, import_data
-from ..services.movies import AddMovieError, add_manual, approve, cache_poster, poster_path
-from ..services.pt import download_candidate, release_wait_reason, revalidate_cached_candidates
+from ..services.movies import AddMovieError, add_manual, approve, cache_poster, place_manual, poster_path
+from ..services.pt import _download_lock, download_candidate, release_wait_reason, revalidate_cached_candidates
 from ..services.sites import add_site, detected_sites, load_cookiecloud, discovery_identity, hidden_discovery_sites, set_discovery_hidden
 from ..services.site_tests import queue_site_test
 from ..services.movie_metadata import queue_metadata, metadata_pending
@@ -249,8 +249,6 @@ def movie_add(ref: Annotated[str, Form()], status: Annotated[str, Form()] = Movi
         return toast("不支持添加到这个列表", "error")
     target = MovieStatus(status)
     settings = load_settings()
-    from ..services.pt import _download_lock
-
     try:
         # Moving an existing movie out of monitoring must not race a download in progress.
         with _download_lock if target != MovieStatus.MONITORING else nullcontext(), session_scope() as session:
@@ -269,7 +267,8 @@ def movie_add(ref: Annotated[str, Form()], status: Annotated[str, Form()] = Movi
 
 
 def _set_status(movie_id: int, status: MovieStatus) -> str:
-    with session_scope() as session:
+    # Leaving monitoring must not race a download in progress, or it would end up completed.
+    with _download_lock if status != MovieStatus.MONITORING else nullcontext(), session_scope() as session:
         movie = session.get(Movie, movie_id)
         if movie is None:
             raise HTTPException(404)
@@ -296,15 +295,11 @@ def movie_ignore(movie_id: int) -> Response:
 
 @router.post("/movies/{movie_id}/watched")
 def movie_watched(movie_id: int) -> Response:
-    from ..services.pt import _download_lock
-
     with _download_lock, session_scope() as session:
         movie = session.get(Movie, movie_id)
         if movie is None:
             raise HTTPException(404)
-        if movie.status != MovieStatus.WATCHED:
-            movie.watched_from_status = movie.status
-            movie.status = MovieStatus.WATCHED
+        place_manual(movie, MovieStatus.WATCHED)
         title = movie.title
     return toast(f"《{title}》已标记为看过，暂停监测和自动下载")
 
@@ -699,7 +694,7 @@ def backup_run() -> Response:
         return toast("请先启用 GitHub 或 WebDAV 备份目标", "warn")
     if not scheduler.trigger("backup"):
         return toast("备份任务已在运行或等待队列中", "warn")
-    return toast("已开始云备份，结果见影片页顶部的任务状态")
+    return toast("已开始云备份，结果见本页备份状态或「后台任务」")
 
 
 @router.post("/test/email")

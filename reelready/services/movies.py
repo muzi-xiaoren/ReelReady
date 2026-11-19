@@ -329,7 +329,7 @@ def approve(movie: Movie) -> None:
 
 
 def place_manual(movie: Movie, status: MovieStatus) -> None:
-    """Move a manually added movie into the list the user picked."""
+    """Move a movie into the list the user picked; marking watched keeps the previous list for restore."""
     if status == MovieStatus.MONITORING:
         # Adding to monitoring never reopens a movie that is already downloaded or watched.
         if movie.status in (MovieStatus.CANDIDATE, MovieStatus.IGNORED):

@@ -44,7 +44,12 @@ class MTeamSite(BaseSite):
             raise LoginExpired("API Key 无效或已过期")
         if resp.status_code != 200:
             raise SiteError(f"HTTP {resp.status_code}")
-        body = resp.json()
+        try:
+            body = resp.json()
+        except ValueError as exc:
+            raise SiteError("馒头返回的不是有效数据") from exc
+        if not isinstance(body, dict):
+            raise SiteError("馒头 API 数据格式已变化")
         if str(body.get("code")) != "0":
             message = body.get("message") or "未知错误"
             if "key" in message.lower() or "登录" in message or "認證" in message or "认证" in message:

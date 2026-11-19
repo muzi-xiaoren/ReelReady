@@ -45,7 +45,7 @@ JOBS: dict[str, Job] = {
         Job("collect", "收集院线高分片", run_collect, lambda s: s.collect.interval_hours),
         Job("check", "检测上线状态", run_check, lambda s: s.check.interval_hours, takes_movies=True),
         Job("pt_scan", "搜索 PT 并下载", run_pt_scan, lambda s: s.pt.interval_hours, takes_movies=True),
-        Job("digest", "发送每日汇总", lambda s: send_digest(s), None),
+        Job("digest", "发送每日汇总", send_digest, None),
         Job("events_cleanup", "清理到期动态", cleanup_events, lambda s: 24),
         Job("backup", "云备份", run_cloud_backup, lambda s: s.backup.interval_hours, enabled=lambda s: s.backup.auto_enabled),
     ]

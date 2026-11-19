@@ -74,9 +74,6 @@ def _notify_urgent(settings: AppSettings) -> None:
             event = session.get(Event, event_id)
             if event is None or event.notified:
                 continue
-            if not settings.email.enabled:
-                event.notified = True
-                continue
             title = event.title.replace('已开始下载', '下载任务已提交') if event.kind == 'downloaded' else event.title
             try:
                 send_mail(settings.email, f"[ReelReady] {title}", render_single(title, event.message, event.created_at))
@@ -99,14 +96,13 @@ def _send_digest(settings: AppSettings) -> str:
         events = _pending(session, urgent=False)
         if not events:
             return "没有需要汇总的消息"
-        if settings.email.enabled:
-            groups: dict[str, list] = defaultdict(list)
-            for event in events:
-                groups[event.kind].append((event.title, event.message, event.created_at))
-            send_mail(settings.email, f"[ReelReady] 每日汇总（{len(events)} 条）", render_digest(dict(groups)))
+        groups: dict[str, list] = defaultdict(list)
+        for event in events:
+            groups[event.kind].append((event.title, event.message, event.created_at))
+        send_mail(settings.email, f"[ReelReady] 每日汇总（{len(events)} 条）", render_digest(dict(groups)))
         for event in events:
             event.notified = True
-        return f"已汇总 {len(events)} 条消息" if settings.email.enabled else "邮件未启用，已跳过"
+        return f"已汇总 {len(events)} 条消息"
 
 
 def cleanup_events(settings: AppSettings) -> str:
