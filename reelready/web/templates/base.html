@@ -7,10 +7,6 @@
   <link rel="icon" href="/static/favicon.svg?v={{ static_revision['favicon.svg'] }}" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css?v={{ static_revision['style.css'] }}">
   <script src="/static/vendor/htmx.min.js"></script>
-  <script>
-    // Local runs without the Docker image have no vendored copy; fall back to the CDN.
-    window.htmx || document.write('<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"><\/script>');
-  </script>
 </head>
 <body hx-boost="false" class="{{ 'library-shell' if gallery_shell }} {% block body_class %}{% endblock %}">
   <header class="topbar">

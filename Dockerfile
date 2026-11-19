@@ -17,8 +17,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY reelready ./reelready
-# Vendor htmx so the UI works without reaching a CDN.
-ADD --chmod=644 https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js ./reelready/web/static/vendor/htmx.min.js
 
 # Set by the release workflow from the git tag.
 ARG REELREADY_VERSION=dev

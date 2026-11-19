@@ -42,6 +42,23 @@ def session_scope() -> Iterator[Session]:
         session.close()
 
 
+SNAPSHOT_KEEP = 3
+
+
+def snapshot_database(reason: str):
+    """Copy the database aside before a risky change, keeping the newest few copies per reason."""
+    import sqlite3
+    from datetime import datetime
+
+    path = config.DATA_DIR / f"{reason}-{datetime.now():%Y%m%d-%H%M%S-%f}.db"
+    with sqlite3.connect(config.DB_PATH) as source, sqlite3.connect(path) as backup:
+        source.backup(backup)
+    # The timestamp in the name sorts chronologically.
+    for stale in sorted(config.DATA_DIR.glob(f"{reason}-*.db"))[:-SNAPSHOT_KEEP]:
+        stale.unlink(missing_ok=True)
+    return path
+
+
 def init_db() -> None:
     from . import models  # noqa: F401  (register tables)
 
@@ -98,8 +115,6 @@ def _migrate_douban_posters() -> None:
 def _migrate_movie_years() -> None:
     """Backfill legacy release years locally; no API requests or movie status changes."""
     import logging
-    import sqlite3
-    from datetime import datetime
 
     from sqlalchemy import Integer, cast, func, select
     from sqlalchemy.orm import load_only
@@ -118,9 +133,7 @@ def _migrate_movie_years() -> None:
             if not restore_primary_year(movie):
                 continue
             if not repaired:
-                backup_path = config.DATA_DIR / f"before-movie-year-fix-{datetime.now():%Y%m%d-%H%M%S-%f}.db"
-                with sqlite3.connect(config.DB_PATH) as source, sqlite3.connect(backup_path) as backup:
-                    source.backup(backup)
+                snapshot_database("before-movie-year-fix")
             repaired += 1
     if repaired:
         logging.getLogger(__name__).info("Restored primary release year for %s legacy movies", repaired)
@@ -128,9 +141,6 @@ def _migrate_movie_years() -> None:
 
 def _migrate_site_identity() -> None:
     """Upgrade existing SQLite installations and merge accidental duplicate sites."""
-    import sqlite3
-    from datetime import datetime
-
     from .models import Movie, Site
     from .site_identity import site_identity
 
@@ -151,9 +161,7 @@ def _migrate_site_identity() -> None:
             else:
                 seen[key] = site
         if duplicates:
-            backup_path = config.DATA_DIR / f"before-site-dedup-{datetime.now():%Y%m%d-%H%M%S-%f}.db"
-            with sqlite3.connect(config.DB_PATH) as source, sqlite3.connect(backup_path) as backup:
-                source.backup(backup)
+            snapshot_database("before-site-dedup")
             for keep, drop in duplicates:
                 keep.cookie = keep.cookie or drop.cookie
                 keep.api_key = keep.api_key or drop.api_key

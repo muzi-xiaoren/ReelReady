@@ -2,7 +2,6 @@
 
 import json
 import logging
-import sqlite3
 from datetime import datetime
 from typing import Any
 from urllib.parse import urlsplit
@@ -11,8 +10,8 @@ from sqlalchemy import DateTime, select
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import ValidationError
 
-from .. import __version__, config
-from ..db import session_scope
+from .. import __version__
+from ..db import session_scope, snapshot_database
 from ..models import CookieCloudBlob, Event, JobState, Movie, MovieStatus, Setting, Site, now
 from ..settings import AppSettings, SETTINGS_KEY, load_settings
 from ..site_identity import site_identity
@@ -251,7 +250,5 @@ def _import_movie(session, values: dict[str, Any]) -> tuple[Movie, bool]:
 
 
 def _backup_database() -> None:
-    path = config.DATA_DIR / f"before-import-{datetime.now():%Y%m%d-%H%M%S-%f}.db"
-    with sqlite3.connect(config.DB_PATH) as source, sqlite3.connect(path) as backup:
-        source.backup(backup)
+    path = snapshot_database("before-import")
     log.info("Saved database backup to %s before import", path)

@@ -9,6 +9,3 @@ venv/
 .DS_Store
 .idea/
 .vscode/
-
-# Fetched at image build time
-reelready/web/static/vendor/
