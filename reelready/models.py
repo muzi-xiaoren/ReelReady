@@ -31,7 +31,7 @@ STATUS_LABELS = {
     MovieStatus.CANDIDATE: "待确认",
     MovieStatus.MONITORING: "监测中",
     MovieStatus.COMPLETED: "已完成",
-    MovieStatus.IGNORED: "黑名单",
+    MovieStatus.IGNORED: "已抛弃",
     MovieStatus.WATCHED: "已看过",
 }
 

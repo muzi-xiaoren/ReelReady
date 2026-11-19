@@ -16,10 +16,12 @@
     {% elif m.status == "monitoring" %}
       <button class="btn btn-sm" hx-post="/movies/{{ m.id }}/search" hx-swap="none">{{ icon("search") }}搜 PT</button>
       <button class="btn btn-sm btn-icon" title="立即检测上线状态" hx-post="/movies/{{ m.id }}/check" hx-swap="none">{{ icon("refresh") }}</button>
-      <button class="btn btn-sm btn-icon btn-danger" title="移入黑名单" hx-post="/movies/{{ m.id }}/ignore"
+      <button class="btn btn-sm btn-icon btn-danger" title="抛弃（不再监测，也不会再被收集）" hx-post="/movies/{{ m.id }}/ignore"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}</button>
     {% elif m.status == "completed" %}
-      <a class="btn btn-sm" href="/movies/{{ m.id }}">{{ icon("eye") }}详情</a>
+      <a class="btn btn-sm" href="/movies/{{ m.id }}">{{ icon("info") }}详情</a>
+      <button class="btn btn-sm btn-icon btn-danger" title="抛弃（看不下去的片，移入「已抛弃」）" hx-post="/movies/{{ m.id }}/ignore"
+              hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}</button>
     {% elif m.status in ("ignored", "watched") %}
       <button class="btn btn-sm" hx-post="/movies/{{ m.id }}/restore"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("undo") }}恢复</button>

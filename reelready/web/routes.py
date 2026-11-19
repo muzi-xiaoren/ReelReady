@@ -290,7 +290,7 @@ def movie_approve(movie_id: int) -> Response:
 @router.post("/movies/{movie_id}/ignore")
 def movie_ignore(movie_id: int) -> Response:
     title = _set_status(movie_id, MovieStatus.IGNORED)
-    return toast(f"《{title}》已移入黑名单，之后不会再被收集")
+    return toast(f"《{title}》已抛弃，之后不会再被收集")
 
 
 @router.post("/movies/{movie_id}/watched")

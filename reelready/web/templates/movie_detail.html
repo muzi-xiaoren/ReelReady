@@ -71,12 +71,13 @@
       {% elif movie.status == "monitoring" %}
         <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/search" hx-swap="none" {{ 'disabled' if not show_pt_results }} title="{{ '提前搜索已关闭，等待上线确认后可搜索' if not show_pt_results else '搜索 PT 资源' }}">{{ icon("search") }}{{ '立即搜索 PT' if show_pt_results else '等待上线确认' }}</button>
         <button class="btn" hx-post="/movies/{{ movie.id }}/check" hx-swap="none">{{ icon("refresh") }}立即检测上线</button>
-        <button class="btn btn-danger" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}移入黑名单</button>
+        <button class="btn btn-danger" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}抛弃</button>
       {% elif movie.status == "completed" %}
         <button class="btn" hx-post="/movies/{{ movie.id }}/redownload" hx-swap="none"
                 hx-confirm="把《{{ movie.title }}》重新放回监测并再次搜索下载？">{{ icon("refresh") }}重新搜索下载</button>
+        <button class="btn btn-danger" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}抛弃</button>
       {% elif movie.status == "ignored" %}
-        <button class="btn" hx-post="/movies/{{ movie.id }}/restore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("undo") }}移出黑名单</button>
+        <button class="btn" hx-post="/movies/{{ movie.id }}/restore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("undo") }}取消抛弃</button>
       {% elif movie.status == "watched" %}
         <span class="help">已看过 · 已暂停监测和自动下载</span>
         <button class="btn" hx-post="/movies/{{ movie.id }}/restore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("undo") }}取消已看过</button>
@@ -85,13 +86,13 @@
         <button class="btn" hx-post="/movies/{{ movie.id }}/watched" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("eye") }}已看过</button>
       {% endif %}
       <button class="btn btn-ghost btn-danger" hx-post="/movies/{{ movie.id }}/delete" hx-swap="none"
-              hx-confirm="彻底删除《{{ movie.title }}》？删除后它可能被重新收集，不想再看到请用黑名单。">{{ icon("trash") }}删除</button>
+              hx-confirm="彻底删除《{{ movie.title }}》？删除后它可能被重新收集，不想再看到请用「抛弃」。">{{ icon("trash") }}删除</button>
     </div>
   </div>
   <aside class="detail-side">
     <div class="hero-status-card">
       <div class="hero-status-head"><span class="faint small">上线与下载</span><span class="pill stage-{{ movie.stage }}">{{ movie.stage_label }}</span></div>
-      <h2>{% if movie.downloaded %}已提交下载{% elif movie.status == 'watched' %}已看过 · 已暂停{% elif movie.status == 'ignored' %}已加入黑名单{% elif movie.status == 'candidate' %}{{ '已查到上线信息' if release_confirmed else '上线状态待检测' if movie.availability_pending else '暂未确认上线' }}{% else %}{{ '已确认上线' if release_confirmed else '上线状态待检测' if movie.availability_pending else '持续监测中' }}{% endif %}</h2>
+      <h2>{% if movie.downloaded %}已提交下载{% elif movie.status == 'watched' %}已看过 · 已暂停{% elif movie.status == 'ignored' %}已抛弃{% elif movie.status == 'candidate' %}{{ '已查到上线信息' if release_confirmed else '上线状态待检测' if movie.availability_pending else '暂未确认上线' }}{% else %}{{ '已确认上线' if release_confirmed else '上线状态待检测' if movie.availability_pending else '持续监测中' }}{% endif %}</h2>
       {% if movie.status == 'candidate' %}<p class="help">待你确认后才会自动监测、搜索和下载；此处仅展示上线资料。</p>{% endif %}
       <dl class="movie-facts">
         <dt>数字版</dt><dd>{{ movie.digital_date or '日期待确认' }}</dd>
