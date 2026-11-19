@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, delete, func, select
 from sqlalchemy.orm import defer
 
 from ..db import session_scope
@@ -621,8 +621,12 @@ def cookiecloud_regenerate() -> Response:
     from ..settings import CookieCloudSettings
 
     settings = load_settings()
+    old_uuid = settings.cookiecloud.uuid
     settings.cookiecloud = CookieCloudSettings()
     save_settings(settings)
+    # The old snapshot can no longer be decrypted or updated.
+    with session_scope() as session:
+        session.execute(delete(CookieCloudBlob).where(CookieCloudBlob.uuid == old_uuid))
     return toast("已重新生成，请在 CookieCloud 扩展里同步更新", HX_Refresh="true")
 
 

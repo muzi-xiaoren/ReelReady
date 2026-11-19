@@ -25,6 +25,8 @@ FORMAT = "reelready-backup"
 FORMAT_VERSION = 2
 # Ids are local to one database; movies are matched by their external ids instead.
 _MOVIE_ID_FIELDS = ("douban_id", "tmdb_id", "imdb_id")
+# Cloud backups leave these out; restoring one keeps the values already configured here.
+BACKUP_TARGET_SECRETS = ("github_token", "webdav_password")
 
 
 class BackupError(Exception):
@@ -172,9 +174,14 @@ def _restore_configuration(session, data, stats):
         stats[key] = 0
         for item in data[key]:
             values = _load(model, item)
-            if model is Setting and item['key'] == SETTINGS_KEY:
-                values['value'] = AppSettings.model_validate(item['value']).model_dump()
             existing = session.get(model, values[primary])
+            if model is Setting and item['key'] == SETTINGS_KEY:
+                restored = AppSettings.model_validate(item['value'])
+                current = ((existing.value or {}).get('backup') or {}) if existing is not None else {}
+                for name in BACKUP_TARGET_SECRETS:
+                    if not getattr(restored.backup, name) and isinstance(current.get(name), str):
+                        setattr(restored.backup, name, current[name])
+                values['value'] = restored.model_dump()
             if existing is None:
                 session.add(model(**values))
             else:

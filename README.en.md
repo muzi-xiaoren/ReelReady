@@ -19,7 +19,7 @@ Movies reach cinemas long before they are released online, and private trackers 
 - **Email**: successful download submission, download failures and expired site logins are sent separately; dated / streaming / new candidates go into a daily digest. Submission mail includes the original event time, and each sent message is recorded separately with concurrent sending prevented. SMTP presets for QQ, 163, 126, Gmail, iCloud, Outlook and more; multiple recipients supported
 - **Event management**: delete individual records or set a retention period; leaving it blank keeps records permanently
 - **Import / export**: under Settings → Import / Export, export either "Everything" or "Movies and events only" as JSON. "Everything" also carries all settings, sites, CookieCloud data and job records, so a new machine or reinstall is restored in one step; that file contains plaintext passwords, cookies and API keys, so keep it private. A full import overwrites settings and site configuration with the same name. Movies merge by Douban / TMDB / IMDb id and only missing details of existing movies are filled in; imported events are never mailed again, and the database is backed up first
-- **Cloud backup**: under Settings → Cloud backup, choose "Movies and events only" (default) or "Everything" and upload it to a GitHub repository (preferably private; the token only needs Contents read/write on that repository) and / or a WebDAV folder such as Jianguoyun. Back up on demand or on a schedule; each target keeps only the latest N files. "Everything" includes plaintext settings and logins, so use a private target you trust. Failures are logged as events and included in the daily digest
+- **Cloud backup**: under Settings → Cloud backup, choose "Movies and events only" (default) or "Everything" and upload it to a GitHub repository (preferably private; the token only needs Contents read/write on that repository) and / or a WebDAV folder such as Jianguoyun. Back up on demand or on a schedule; each target keeps only the latest N files. "Everything" includes plaintext settings and logins, so use a private target you trust; the GitHub token and WebDAV password themselves are never uploaded, and restoring a cloud backup keeps the ones already entered. Failures are logged as events and included in the daily digest
 - **Settings auto-save**: reorder regions and resolutions; background tasks run sequentially and duplicate requests are not repeatedly queued
 - **Catch-up on startup**: the computer does not have to run 24/7; missed checks run right after startup
 
@@ -99,6 +99,12 @@ python -m reelready
 ```
 
 Data goes to `./data` by default; override with `REELREADY_DATA_DIR` and `REELREADY_PORT`.
+
+The tests only use the standard library's `unittest`, so the dependencies above are enough:
+
+```bash
+python -m unittest discover -s tests
+```
 
 ## Notes
 

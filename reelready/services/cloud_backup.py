@@ -12,8 +12,8 @@ import httpx
 
 from ..db import session_scope
 from ..http import make_client
-from ..settings import AppSettings, BackupSettings
-from .backup import export_data
+from ..settings import AppSettings, BackupSettings, SETTINGS_KEY
+from .backup import BACKUP_TARGET_SECRETS, export_data
 from .events import add_event
 
 log = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def run_cloud_backup(settings: AppSettings) -> str:
     if not targets:
         return "未启用任何备份目标，已跳过"
     name = backup_filename()
-    body = json.dumps(export_data(config.scope), ensure_ascii=False, indent=1).encode()
+    body = json.dumps(_without_target_secrets(export_data(config.scope)), ensure_ascii=False, indent=1).encode()
     done, failed = [], []
     for label, upload in targets:
         try:
@@ -56,6 +56,15 @@ def run_cloud_backup(settings: AppSettings) -> str:
             add_event(session, "backup_failed", "云备份失败", "\n".join(failed), dedupe_key="backup_failed", dedupe_hours=12)
         raise CloudBackupError("；".join(done + failed))
     return f"{name}：" + "；".join(done)
+
+
+def _without_target_secrets(data: dict) -> dict:
+    """A backup must not carry the credentials of the place it is stored in."""
+    for row in data.get('settings') or []:
+        if row.get('key') == SETTINGS_KEY and isinstance((row.get('value') or {}).get('backup'), dict):
+            backup = dict(row['value']['backup'], **{name: '' for name in BACKUP_TARGET_SECRETS})
+            row['value'] = dict(row['value'], backup=backup)
+    return data
 
 
 # ---------------------------------------------------------------- GitHub

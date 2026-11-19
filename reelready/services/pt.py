@@ -246,7 +246,7 @@ def revalidate_cached_candidates(settings: AppSettings | None = None, movie_ids:
             hits = [TorrentInfo(**{**{key: value for key, value in item.items() if key in fields}, 'imdb_source': item.get('imdb_source', 'search')}) for item in movie.last_pt_candidates if (item.get('title') or '').strip() and all(key in item for key in ('site_id', 'site_name', 'torrent_id'))]
             _, ranked = rank_for_movie(hits, settings.rules, _movie_query(movie), release_wait_reason(movie))
             movie.last_pt_candidates = [item.to_dict() for item in ranked]
-            movie.last_pt_summary = f"找到 {len(ranked)} 个种子，{sum(item.ok for item in ranked)} 个可自动下载" if ranked else "暂无有效资源（已移除标题为空的解析记录）"
+            movie.last_pt_summary = f"找到 {len(ranked)} 个种子，{sum(item.ok for item in ranked)} 个符合要求" if ranked else "暂无有效资源（已移除标题为空的解析记录）"
             updated += 1
     return updated
 

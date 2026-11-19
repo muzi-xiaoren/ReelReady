@@ -20,7 +20,7 @@
 <div class="cloud-policy">
   <div class="cloud-policy-head"><div><h3>备份策略</h3><p class="help">关闭定时备份后，仍可点击上方按钮手动备份。</p></div>{{ backup_switch('auto_enabled', '定时备份') }}</div>
   <div class="cloud-policy-fields">{{ backup_field('scope') }}{{ backup_field('interval_hours') }}{{ backup_field('keep_count') }}</div>
-  <p class="help cloud-scope-warning" data-cloud-full-warning {{ 'hidden' if values.items.scope.value != 'full' }}>全部信息包含密码、API Key 和 Cookie，请使用自己的私有仓库或可信存储，勿公开分享备份。</p>
+  <p class="help cloud-scope-warning" data-cloud-full-warning {{ 'hidden' if values.items.scope.value != 'full' }}>全部信息包含密码、API Key 和 Cookie，请使用自己的私有仓库或可信存储，勿公开分享备份。GitHub Token 和 WebDAV 密码不会上传，恢复后保留本机已填写的值。</p>
 </div>
 
 <div class="cloud-targets">

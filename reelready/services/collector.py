@@ -229,7 +229,6 @@ def _collect_tmdb(settings: AppSettings, douban: DoubanClient, tmdb: TMDBClient,
                     merged.extend(entry for entry in releases if entry not in merged)
         except TMDBError as exc:
             notes.append(f"TMDB {region} 失败: {exc}")
-            break
     created = 0
     for item in seen.values():
         if item.rating is None or item.rating < settings.collect.tmdb_min_rating or (item.votes or 0) < settings.collect.tmdb_min_votes:
