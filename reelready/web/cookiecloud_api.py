@@ -6,6 +6,7 @@ Set the extension's server address to ``http://<host>:<port>/cookiecloud``.
 import gzip
 import json
 import logging
+import zlib
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -40,7 +41,7 @@ async def _payload(request: Request) -> dict[str, Any]:
             if request.headers.get("content-encoding", "").lower() == "gzip":
                 raw = gzip.decompress(raw)
             body = json.loads(raw)
-        except (ValueError, OSError, EOFError):
+        except (ValueError, OSError, EOFError, zlib.error):
             return {}
         return body if isinstance(body, dict) else {}
     if "form" in content_type:

@@ -126,9 +126,12 @@ class TMDBClient:
         if resp.status_code != 200:
             raise TMDBError(f"TMDB 返回 HTTP {resp.status_code}")
         try:
-            return resp.json()
+            data = resp.json()
         except ValueError as exc:
             raise TMDBError("TMDB 返回的不是有效数据") from exc
+        if not isinstance(data, dict):
+            raise TMDBError("TMDB 返回的不是有效数据")
+        return data
 
     def now_playing(self, region: str, max_pages: int = 3) -> list[TMDBMovie]:
         movies: list[TMDBMovie] = []

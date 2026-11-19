@@ -216,9 +216,10 @@ def _collect_douban_items(settings: AppSettings, douban: DoubanClient, tmdb: TMD
 def _collect_tmdb(settings: AppSettings, douban: DoubanClient, tmdb: TMDBClient, notes: list[str]) -> int:
     seen: dict[int, TMDBMovie] = {}
     for region in settings.collect.tmdb_regions:
+        region = region.strip().upper()
         try:
-            for item in tmdb.now_playing(region.strip().upper()):
-                releases = item.details.get('collection_releases') or [{'region': region.upper(), 'date': item.release_date}]
+            for item in tmdb.now_playing(region):
+                releases = item.details.get('collection_releases') or [{'region': region, 'date': item.release_date}]
                 previous = seen.get(item.id)
                 if previous is None:
                     item.details['collection_releases'] = list(releases)

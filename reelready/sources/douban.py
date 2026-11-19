@@ -150,7 +150,9 @@ class DoubanClient:
             data = resp.json()
         except ValueError as exc:
             raise DoubanError("豆瓣返回的不是有效数据") from exc
-        if isinstance(data, dict) and data.get("code") and data.get("msg"):
+        if not isinstance(data, dict):
+            raise DoubanError("豆瓣返回的不是有效数据")
+        if data.get("code") and data.get("msg"):
             raise DoubanError(f"豆瓣接口错误: {data['msg']}")
         return data
 

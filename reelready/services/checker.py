@@ -78,6 +78,9 @@ def _check_one(settings: AppSettings, movie_id: int, tmdb: TMDBClient | None, do
             except DoubanError as exc:
                 log.info("Douban check failed for %s: %s", movie.title, exc)
 
+        # Linking may have merged this movie into a record the user already watched or ignored.
+        if movie.status != MovieStatus.MONITORING:
+            return False
         _store_availability(movie, tmdb_info, douban_info)
         movie.last_checked_at = now()
         return _advance(session, movie)

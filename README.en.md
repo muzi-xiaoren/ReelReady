@@ -14,12 +14,12 @@ Movies reach cinemas long before they are released online, and private trackers 
 - **Release tracking**. Stages only move forward: `In cinemas → Dated → Streaming → Downloaded`
   - Dated: TMDB lists a digital or physical release date
   - Streaming: TMDB watch providers (JustWatch data) show it can be streamed, rented or bought, or Douban lists online platforms
-- **PT search and automatic download**: M-Team (official API) and NexusPHP sites. Each scan picks the single best torrent across all sites and pushes it to qBittorrent
+- **PT search and automatic download**: M-Team (official API), Rousi Pro (API key), NexusPHP sites and Monikadesign. Each scan picks the single best torrent across all sites and pushes it to qBittorrent
 - **Cookies via CookieCloud**: just stay logged in to your sites in the browser and cookies are synced automatically. ReelReady also detects the NexusPHP sites you are logged into from the synced cookies
 - **Email**: successful download submission, download failures and expired site logins are sent separately; dated / streaming / new candidates go into a daily digest. Submission mail includes the original event time, and each sent message is recorded separately with concurrent sending prevented. SMTP presets for QQ, 163, 126, Gmail, iCloud, Outlook and more; multiple recipients supported
 - **Event management**: delete individual records or set a retention period; leaving it blank keeps records permanently
-- **Import / export**: under Settings → Import / Export, export movie records and event history as JSON and import them after moving or reinstalling. Settings and sites are left out so passwords, cookies and API keys never end up in the file. Imports merge by Douban / TMDB / IMDb id, only fill in missing details of existing movies, and back up the database first
-- **Cloud backup**: under Settings → Cloud backup, upload the same export to a GitHub repository (preferably private; the token only needs Contents read/write on that repository) and / or a WebDAV folder such as Jianguoyun. Back up on demand or on a schedule; each target keeps only the latest N files, and failures are logged as events and included in the daily digest
+- **Import / export**: under Settings → Import / Export, export either "Everything" or "Movies and events only" as JSON. "Everything" also carries all settings, sites, CookieCloud data and job records, so a new machine or reinstall is restored in one step; that file contains plaintext passwords, cookies and API keys, so keep it private. A full import overwrites settings and site configuration with the same name. Movies merge by Douban / TMDB / IMDb id and only missing details of existing movies are filled in; imported events are never mailed again, and the database is backed up first
+- **Cloud backup**: under Settings → Cloud backup, choose "Movies and events only" (default) or "Everything" and upload it to a GitHub repository (preferably private; the token only needs Contents read/write on that repository) and / or a WebDAV folder such as Jianguoyun. Back up on demand or on a schedule; each target keeps only the latest N files. "Everything" includes plaintext settings and logins, so use a private target you trust. Failures are logged as events and included in the daily digest
 - **Settings auto-save**: reorder regions and resolutions; background tasks run sequentially and duplicate requests are not repeatedly queued
 - **Catch-up on startup**: the computer does not have to run 24/7; missed checks run right after startup
 
@@ -69,6 +69,8 @@ On the **Settings** page:
 On the **Sites** page:
 
 - **M-Team**: create an API key on the M-Team website and paste it
+- **Rousi Pro**: choose "Rousi Pro (API Key)" and paste a personal API key created in your account settings (needs profile:read, torrent:read and torrent:download). Browser cookies cannot replace the key
+- **Monikadesign**: sync the login cookie with CookieCloud, or add it manually as "Monikadesign (Cookie)"
 - **NexusPHP sites**: sync cookies with CookieCloud (below), or paste a cookie manually
 
 ## Syncing cookies with CookieCloud

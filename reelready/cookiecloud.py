@@ -52,7 +52,7 @@ def decrypt(encrypted: str, uuid: str, password: str, crypto_type: str = "legacy
         return json.loads(plain.decode("utf-8"))
     except CookieCloudError:
         raise
-    except (ValueError, KeyError, UnicodeDecodeError) as exc:
+    except (ValueError, KeyError, TypeError) as exc:
         raise CookieCloudError("解密失败，请检查用户 KEY 和端对端加密密码") from exc
 
 
