@@ -7,6 +7,12 @@
     <span class="stage"><span class="pill stage-{{ m.stage }}">{{ m.stage_label }}</span>{% if m.id in rerelease_ids %} <span class="pill no-dot">重映</span>{% endif %}</span>
     <span class="movie-sub">{{ m.year or '' }}{% if m.original_title and m.original_title != m.title %} · {{ m.original_title }}{% endif %}</span>
   </a>
+  <div class="poster-evaluation" data-evaluation="{{ m.id }}" data-rating="{{ m.personal_rating or 0 }}" aria-label="为《{{ m.title }}》评分">
+    <div class="personal-stars" role="group" aria-label="我的评分">
+    {% for star in range(1, 6) %}<button type="button" data-star="{{ star }}" class="{{ 'selected' if m.personal_rating and star <= m.personal_rating }}" aria-label="{{ star }} 星" aria-pressed="{{ 'true' if m.personal_rating == star else 'false' }}">★</button>{% endfor %}
+    </div>
+    <button type="button" class="personal-edit {{ 'has-review' if m.personal_review }}" data-review="{{ m.id }}" title="写评论与同步" aria-label="写评论与同步">{{ icon('edit') }}</button>
+  </div>
   <div class="movie-actions">
     {% if m.status == "candidate" %}
       <button class="btn btn-primary btn-sm" hx-post="/movies/{{ m.id }}/approve"

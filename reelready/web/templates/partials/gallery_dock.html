@@ -58,6 +58,7 @@
       <a class="gallery-orb {{ 'active' if nav == 'sites' }}" href="/sites" {% if nav == 'sites' %}aria-current="page"{% endif %}>{{ icon('globe') }}<span>站点</span></a>
       <a class="gallery-orb {{ 'active' if nav == 'settings' }}" href="/settings" {% if nav == 'settings' %}aria-current="page"{% endif %}>{{ icon('settings') }}<span>设置</span></a>
       <button class="gallery-orb" type="button" data-gallery-jobs>{{ icon('tasks') }}<span>后台任务</span><span class="gallery-error-count" data-gallery-error-count>{{ (errors | length) if errors else '' }}</span></button>
+      <button class="gallery-orb" type="button" data-rating-sync>{{ icon('refresh') }}<span>全局同步</span></button>
     </div>
   </details>
   <button class="gallery-dock-button gallery-dock-collapse" type="button" data-gallery-collapse aria-label="自动收起工具栏" aria-pressed="false" title="自动收起工具栏，移到页面底部展开">{{ icon('chevron-down') }}</button>

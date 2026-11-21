@@ -45,6 +45,8 @@
       <div class="confirm-actions"><button class="btn" value="cancel" autofocus>取消</button><button class="btn btn-primary" id="confirm-accept" value="accept">确认</button></div>
     </form>
   </dialog>
+  {% include 'partials/ratings_dialogs.html' %}
   <script src="/static/app.js?v={{ static_revision['app.js'] }}"></script>
+  <script src="/static/ratings.js?v={{ static_revision['ratings.js'] }}"></script>
 </body>
 </html>

@@ -121,6 +121,8 @@ class EmailSettings(BaseModel):
 
 
 class TMDBSettings(BaseModel):
+    session_id: str = _field('', '账户会话', secret=True, hidden=True)
+    account_name: str = _field('', '已连接账户', hidden=True)
     api_key: str = _field("", "API Key", "themoviedb.org 申请的 v3 API Key 或 v4 Read Access Token", secret=True)
     language: str = _field("zh-CN", "语言")
     use_proxy: bool = _field(True, "通过代理访问", "国内直连 TMDB 不稳定，填了代理地址时建议开启")

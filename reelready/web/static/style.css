@@ -556,6 +556,61 @@ input:focus, select:focus, textarea:focus {
 .movie-actions .btn { flex: 1; }
 .movie-actions .btn-icon { flex: 0 0 30px; }
 
+/* Personal evaluation stays on the poster; captions remain quiet. */
+.poster-evaluation { position: absolute; z-index: 4; bottom: 58px; left: 12px; right: 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 6px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(15,17,23,.9); box-shadow: 0 6px 22px #0005; opacity: 0; visibility: hidden; transition: opacity .15s; }
+.movie-card:hover .poster-evaluation, .movie-card:focus-within .poster-evaluation { opacity: 1; visibility: visible; }
+.personal-stars { display: flex; flex-wrap: nowrap; flex: 1; justify-content: space-between; min-width: 0; }
+.personal-stars button, .evaluation-form-stars > button:not(.rating-clear) { padding: 0; border: 0; background: transparent; color: #747987; font-size: 25px; line-height: 30px; cursor: pointer; }
+.personal-stars button { flex: 0 1 28px; min-width: 20px; }
+.personal-stars button.selected, .evaluation-form-stars button.selected { color: #f8bd4f; }
+.personal-stars button:hover, .evaluation-form-stars button:hover { color: #ffe0a0; }
+.personal-edit { display: grid; place-items: center; flex: 0 0 30px; height: 30px; border: 0; border-left: 1px solid #ffffff20; background: transparent; color: #cbd0da; cursor: pointer; }
+.personal-edit svg { width: 17px; height: 17px; }
+.personal-edit.has-review { color: #f8bd4f; }
+.poster-evaluation button:focus-visible, .evaluation-form-stars button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
+.evaluation-dialog, .rating-sync-dialog { color: var(--text); background: var(--bg-elev); border: 1px solid var(--border); border-radius: 22px; padding: 26px; max-height: min(88dvh, 900px); overflow-y: auto; box-shadow: 0 24px 90px #0008; }
+.evaluation-dialog { width: min(540px, calc(100vw - 28px)); }
+.rating-sync-dialog { width: min(780px, calc(100vw - 28px)); }
+.evaluation-dialog::backdrop, .rating-sync-dialog::backdrop { background: #05070cb8; backdrop-filter: blur(5px); }
+.rating-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.rating-dialog-head h2 { margin: 5px 0 0; font-size: 22px; line-height: 1.35; overflow-wrap: anywhere; }
+.rating-eyebrow { color: var(--text-faint); font-size: 11px; }
+.evaluation-form-stars { display: flex; align-items: center; gap: 9px; margin: 20px 0; }
+.evaluation-form-stars > button:not(.rating-clear) { font-size: 32px; width: 34px; height: 38px; }
+.rating-clear { color: var(--text-faint); background: transparent; border: 0; cursor: pointer; margin-left: 8px; font: inherit; font-size: 12px; }
+#evaluation-form > label:not(.rating-watched) { display: block; margin: 18px 0 9px; color: var(--text-soft); font-size: 13px; }
+#personal-review { resize: vertical; min-height: 140px; max-height: 40dvh; width: 100%; font: inherit; font-size: 14px; line-height: 1.8; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+.rating-watched { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--text-soft); margin-top: 18px; }
+.rating-watched input { width: 16px; height: 16px; accent-color: var(--accent); }
+.rating-dialog-actions, .rating-sync-tools, .rating-account, .rating-manual-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.rating-dialog-actions { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.rating-feedback { font-size: 12px; color: var(--accent-strong); min-height: 1em; margin: 15px 0; line-height: 1.7; }
+.rating-platforms { display: flex; gap: 8px; margin: 18px 0; }
+.rating-platforms .active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+.rating-account { justify-content: space-between; padding: 14px; border-radius: 12px; background: var(--bg); font-size: 13px; }
+.rating-sync-tools { margin-top: 18px; }
+.rating-sync-rows { display: grid; gap: 10px; }
+.rating-sync-row { border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 16px; min-width: 0; }
+.rating-row-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+.rating-row-status { color: var(--text-faint); white-space: nowrap; font-size: 11px; }
+.rating-row-status.new { color: var(--ok); }
+.rating-row-status.conflict { color: var(--accent-strong); }
+.rating-row-status.error { color: var(--err); }
+.rating-row-copy { margin-top: 10px; color: var(--text-soft); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow-y: auto; }
+.rating-sync-row label { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: 11px; color: var(--text-faint); }
+.rating-sync-row select { width: auto; max-width: 65%; height: 34px; font-size: 12px; }
+.rating-settings-entry { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.rating-dialog-actions .spacer, .rating-sync-tools .spacer { flex: 1; }
+.rating-sync-dialog [hidden], .evaluation-dialog [hidden] { display: none !important; }
+@media (hover: none) { .poster-evaluation { opacity: 1; visibility: visible; bottom: 10px; } }
+@media (max-width: 600px) {
+  .poster-evaluation { left: 7px; right: 7px; padding: 4px; gap: 2px; }
+  .personal-stars button { min-width: 16px; font-size: 21px; }
+  .personal-edit { flex-basis: 25px; }
+  .evaluation-dialog, .rating-sync-dialog { padding: 18px; border-radius: 16px; }
+  .rating-sync-tools .spacer { display: none; }
+}
+
 /* ---------------------------------------------------------------- pills */
 
 .pill {
@@ -954,7 +1009,7 @@ td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .gallery-view .movie-actions { position: absolute; z-index: 3; bottom: 12px; left: 12px; right: 12px; padding: 0; opacity: 0; visibility: hidden; pointer-events: none; }
 .gallery-view .movie-actions .btn:not(.btn-primary) { background: var(--bg-elev); }
 .gallery-view .poster .stage { opacity: 0; visibility: hidden; }
-.gallery-view .movie-sub { position: absolute; z-index: 2; bottom: 54px; left: 12px; right: 12px; color: #fff; opacity: 0; visibility: hidden; margin: 0; }
+.gallery-view .movie-sub { position: absolute; z-index: 2; bottom: 112px; left: 12px; right: 12px; color: #fff; opacity: 0; visibility: hidden; margin: 0; }
 .gallery-view .movie-card:hover .movie-actions, .gallery-view .movie-card:focus-within .movie-actions,
 .gallery-view .movie-card:hover .stage, .gallery-view .movie-card:focus-within .stage,
 .gallery-view .movie-card:hover .movie-sub, .gallery-view .movie-card:focus-within .movie-sub { opacity: 1; visibility: visible; pointer-events: auto; }

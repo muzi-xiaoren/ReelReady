@@ -55,7 +55,7 @@ templates.env.globals["version"] = __version__
 # Compute once at startup so local UI updates also invalidate browser caches.
 templates.env.globals["static_revision"] = {
     name: hashlib.sha256((config.STATIC_DIR / name).read_bytes()).hexdigest()[:12]
-    for name in ('style.css', 'app.js', 'favicon.svg')
+    for name in ('style.css', 'app.js', 'ratings.js', 'favicon.svg')
 }
 
 
@@ -85,7 +85,7 @@ async def lifespan(_app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    from . import cookiecloud_api, routes
+    from . import cookiecloud_api, routes, ratings
 
     app = FastAPI(title="ReelReady", lifespan=lifespan, docs_url=None, redoc_url=None)
 
@@ -104,4 +104,5 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(config.STATIC_DIR)), name="static")
     app.include_router(cookiecloud_api.router)
     app.include_router(routes.router)
+    app.include_router(ratings.router)
     return app

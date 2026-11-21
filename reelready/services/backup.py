@@ -113,6 +113,11 @@ def _restore_records(session, movies, events, site_map, stats):
         if not isinstance(item, dict):
             continue
         values = _load(Movie, item)
+        from .ratings import RatingError, validate_evaluation
+        try:
+            validate_evaluation(values.get('personal_rating'), values.get('personal_review'))
+        except RatingError as exc:
+            raise BackupError(str(exc)) from None
         _remap_site_references(values, site_map)
         if not values.get("title"):
             continue

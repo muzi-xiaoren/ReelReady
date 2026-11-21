@@ -61,6 +61,8 @@ class Movie(Base):
     year: Mapped[int | None] = mapped_column(Integer)
     poster_url: Mapped[str | None] = mapped_column(Text)
     overview: Mapped[str | None] = mapped_column(Text)
+    personal_rating: Mapped[int | None] = mapped_column(Integer)
+    personal_review: Mapped[str | None] = mapped_column(Text)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     metadata_checked_at: Mapped[datetime | None] = mapped_column(DateTime)
 

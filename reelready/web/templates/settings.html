@@ -53,6 +53,7 @@
           {% endif %}
         </div>
       </form>
+      {% if key == 'tmdb' %}<div class="rating-settings-entry"><span class="help">个人评分同步需另外连接 TMDB 账户。</span><button class="btn" type="button" data-rating-sync>连接账户与全局同步</button></div>{% endif %}
       {% endif %}
     </section>
     {% endfor %}

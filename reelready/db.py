@@ -65,6 +65,9 @@ def init_db() -> None:
     Base.metadata.create_all(engine)
     with engine.begin() as connection:
         columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(movies)")}
+        for personal_column, sql_type in [('personal_rating', 'INTEGER'), ('personal_review', 'TEXT')]:
+            if personal_column not in columns:
+                connection.exec_driver_sql(f'ALTER TABLE movies ADD COLUMN {personal_column} {sql_type}')
         if "details" not in columns:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN details JSON NOT NULL DEFAULT '{}'")
         if "metadata_checked_at" not in columns:

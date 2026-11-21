@@ -1,0 +1,29 @@
+<dialog id="evaluation-dialog" class="evaluation-dialog" aria-labelledby="evaluation-title">
+  <form id="evaluation-form">
+    <header class="rating-dialog-head"><div><span class="rating-eyebrow">我的评价 · 仅保存在本地</span><h2 id="evaluation-title">评价影片</h2></div><button class="btn btn-icon" type="button" data-close-rating aria-label="关闭">{{ icon('x') }}</button></header>
+    <div class="evaluation-form-stars" role="group" aria-label="我的评分">{% for star in range(1, 6) %}<button type="button" data-editor-star="{{ star }}" aria-label="{{ star }} 星">★</button>{% endfor %}<button class="rating-clear" type="button" data-clear-rating>清除</button></div>
+    <label for="personal-review">写下你的观影感受</label>
+    <textarea id="personal-review" maxlength="10000" rows="6" placeholder="可以只评分，也可以只写评论。"></textarea>
+    <label class="rating-watched"><input type="checkbox" id="rating-mark-watched">同时标记已看过（暂停监测和自动下载）</label>
+    <p id="evaluation-error" class="rating-feedback" role="status"></p>
+    <footer class="rating-dialog-actions"><button class="btn" type="button" data-sync-current>同步到平台…</button><span class="spacer"></span><button class="btn" type="button" data-close-rating>取消</button><button class="btn btn-primary" type="submit">保存评价</button></footer>
+  </form>
+</dialog>
+<dialog id="rating-sync-dialog" class="rating-sync-dialog" aria-labelledby="rating-sync-title">
+  <header class="rating-dialog-head"><div><span class="rating-eyebrow">由你决定哪些内容同步</span><h2 id="rating-sync-title">同步我的评价</h2></div><button class="btn btn-icon" type="button" data-close-rating aria-label="关闭">{{ icon('x') }}</button></header>
+  <p class="help" id="rating-sync-scope">包含所有分类中已填写的个人评分和评论。</p>
+  <div class="rating-platforms"><button class="btn active" type="button" data-rating-platform="tmdb">TMDB</button><button class="btn" type="button" data-rating-platform="douban">豆瓣</button></div>
+  <div id="tmdb-rating-panel">
+    <div class="rating-account"><span id="rating-account-state">读取账户状态…</span><div><button class="btn btn-sm" type="button" data-tmdb-connect>连接账户</button><button class="btn btn-sm" type="button" data-tmdb-disconnect hidden>断开连接</button></div></div>
+    <p class="help" id="rating-platform-help">5 星对应 TMDB 10 分。仅同步评分；TMDB 暂未提供评论写入接口。清空本地评价不会删除平台内容。</p>
+    <div class="rating-sync-tools"><button class="btn" type="button" data-sync-preview>读取平台并预览</button><span class="spacer"></span><button class="btn btn-sm" type="button" data-conflicts="overwrite" disabled>冲突全部覆盖</button><button class="btn btn-sm" type="button" data-conflicts="skip" disabled>冲突全部跳过</button></div>
+    <p id="rating-sync-progress" class="rating-feedback" role="status"></p>
+    <div id="rating-sync-rows" class="rating-sync-rows"></div>
+    <footer class="rating-dialog-actions"><span class="help">已有内容默认跳过，评分和评论分别选择。</span><span class="spacer"></span><button class="btn btn-primary" type="button" data-sync-confirm disabled>确认同步</button></footer>
+  </div>
+  <details id="douban-rating-panel" hidden>
+    <summary>在豆瓣手动提交</summary>
+    <p class="help">也可以打开对应影片，在豆瓣手动核对并提交。</p>
+    <div id="douban-manual-rows" class="rating-sync-rows"></div>
+  </details>
+</dialog>

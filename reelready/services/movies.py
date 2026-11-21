@@ -89,6 +89,7 @@ def _merge(session: Session, keep: Movie, drop: Movie) -> Movie:
     fields = [
         "douban_id", "tmdb_id", "imdb_id", "original_title", "year", "poster_url", "overview",
         "douban_rating", "douban_votes", "tmdb_rating", "tmdb_votes", "digital_date",
+        "personal_rating", "personal_review",
     ]
     values = {f: getattr(drop, f) for f in fields}
     keep.stage = max(keep.stage, drop.stage)

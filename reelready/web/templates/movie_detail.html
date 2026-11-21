@@ -65,6 +65,7 @@
     </div>
 
     <div class="detail-actions">
+      <button class="btn" type="button" data-review="{{ movie.id }}">{{ icon('edit') }}我的评分与评论{% if movie.personal_rating %} · {{ movie.personal_rating }} 星{% endif %}</button>
       {% if movie.status == "candidate" %}
         <button class="btn btn-primary" hx-post="/movies/{{ movie.id }}/approve" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("check") }}加入监测</button>
         <button class="btn" hx-post="/movies/{{ movie.id }}/ignore" hx-swap="none" hx-on::after-request="if(event.detail.successful) location.reload()">{{ icon("x") }}不要</button>
