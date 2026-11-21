@@ -14,6 +14,7 @@ from ..settings import AppSettings
 from ..site_identity import site_identity
 from ..sites.catalog import lookup_site, supported_kind
 from ..sites import LoginExpired, SiteError, build_site, snapshot
+from .clients import pt_proxy
 
 log = logging.getLogger(__name__)
 
@@ -164,7 +165,7 @@ def test_site(settings: AppSettings, site_id: int) -> tuple[bool, str]:
         config = snapshot(row, settings.network.user_agent)
     ok, message, status = False, "", "error"
     try:
-        site = build_site(config)
+        site = build_site(config, proxy=pt_proxy(settings))
         try:
             message = site.test()
             ok, status = True, "ok"

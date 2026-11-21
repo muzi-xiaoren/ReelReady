@@ -3,6 +3,7 @@
 import logging
 import threading
 import time
+import httpx
 from datetime import date
 from dataclasses import dataclass
 
@@ -16,6 +17,7 @@ from ..settings import AppSettings, SETTINGS_KEY
 from ..sites import BaseSite, LoginExpired, MovieQuery, SiteError, build_site, snapshot
 from ..torrent_rules import GB, Evaluated, TorrentInfo, matches_movie, pick_best
 from .checker import monitored_ids
+from .clients import pt_proxy
 from .events import add_event
 from .movies import mark_downloaded
 
@@ -154,7 +156,7 @@ def open_sites(settings: AppSettings, site_ids: list[int] | None = None) -> list
     sites: list[BaseSite] = []
     for config in configs:
         try:
-            sites.append(build_site(config))
+            sites.append(build_site(config, proxy=pt_proxy(settings)))
         except LoginExpired as exc:
             mark_site_invalid(config.id, str(exc))
         except SiteError as exc:
@@ -299,9 +301,34 @@ def _save_rejected_identity(movie_id: int, torrent: TorrentInfo, settings: AppSe
         movie.last_pt_summary = f'找到 {len(ranked)} 个种子，{sum(item.ok for item in ranked)} 个符合要求'
 
 
+def _fetch_torrent(settings: AppSettings, site: BaseSite, torrent: TorrentInfo) -> bytes:
+    """Retry only transient file-fetch failures, before any downloader submission."""
+    for attempt in range(settings.pt.download_retries + 1):
+        try:
+            # Re-enter the adapter so expiring download links are regenerated.
+            return site.download(torrent)
+        except SiteError as exc:
+            cause = exc
+            seen = set()
+            transient = False
+            while cause is not None and id(cause) not in seen:
+                seen.add(id(cause))
+                if isinstance(cause, (httpx.TimeoutException, httpx.NetworkError,
+                                      httpx.RemoteProtocolError, TimeoutError, ConnectionError)):
+                    transient = True
+                    break
+                cause = cause.__cause__ or cause.__context__
+            if isinstance(exc, LoginExpired) or not transient or attempt >= settings.pt.download_retries:
+                raise
+            # Do not log exception URLs: signed torrent links can contain passkeys.
+            log.info('Retrying torrent fetch: site=%s attempt=%s/%s',
+                     site.name, attempt + 1, settings.pt.download_retries)
+            time.sleep(max(2, settings.pt.request_delay_seconds) * (attempt + 1))
+
+
 def _download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: TorrentInfo) -> bool:
     try:
-        content = site.download(torrent)
+        content = _fetch_torrent(settings, site, torrent)
         with QBittorrent(settings.qbittorrent) as qb:
             qb.add_torrent(content, f"{torrent.site_name}-{torrent.torrent_id}.torrent")
     except LoginExpired as exc:

@@ -59,6 +59,8 @@ class CheckSettings(BaseModel):
 
 
 class PTSettings(BaseModel):
+    use_proxy: bool = _field(False, "PT 通过代理访问", "搜索、核实详情、下载种子和测试站点均使用「网络」中的代理地址；不影响 qBittorrent 连接。")
+    download_retries: int = Field(2, ge=0, le=3, title="种子文件下载重试次数", description="仅连接中断、连接或读取超时重试；0 表示关闭，最多额外重试 3 次。不会重试向 qBittorrent 提交种子。")
     interval_hours: float = _field(2, "PT 搜索间隔(小时)")
     request_delay_seconds: float = _field(5, "每次请求间隔(秒)", "避免触发站点风控")
     early_search: bool = _field(False, "提前搜索未上线影片", "关闭时：等数字版日期到达或有可看平台再搜索；开启时：允许提前查看资源，但未确认上线前不会自动下载。自动任务和「立即搜索 PT」都遵守此开关。")

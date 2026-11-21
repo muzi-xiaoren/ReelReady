@@ -9,6 +9,12 @@ def tmdb_proxy(settings: AppSettings) -> str | None:
     return None
 
 
+def pt_proxy(settings: AppSettings) -> str | None:
+    if settings.pt.use_proxy:
+        return settings.network.proxy_url or None
+    return None
+
+
 def make_tmdb(settings: AppSettings) -> TMDBClient | None:
     if not settings.tmdb.api_key:
         return None
