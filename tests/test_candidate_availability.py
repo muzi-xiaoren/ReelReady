@@ -30,6 +30,9 @@ class CandidateAvailabilityTests(unittest.TestCase):
             patch.object(db, 'SessionLocal', sessionmaker(bind=self.engine, expire_on_commit=False)),
             patch.object(config, 'DATA_DIR', directory),
             patch.object(config, 'DB_PATH', directory / 'test.db'),
+            # Detail pages queue a background metadata refresh that would outlive these patches
+            # and write to the real data/reelready.db.
+            patch('reelready.web.routes.queue_metadata', return_value=False),
         ]
         for item in self.patches:
             item.start()

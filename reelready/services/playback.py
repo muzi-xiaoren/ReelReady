@@ -31,18 +31,22 @@ def match_legacy(downloaded: dict[str, Any], rows: list[dict]) -> dict | None:
         total = row.get("total_size") or row.get("size") or 0
         return bool(size and total) and abs(total - size) <= size * 0.02
 
+    def single(candidates: list[dict]) -> dict | None:
+        # Cross-seeded copies share one location; any other ambiguity is left unmatched.
+        locations = {row.get("content_path") or row.get("name") for row in candidates}
+        if not candidates or len(locations) != 1:
+            return None
+        return max(candidates, key=lambda row: float(row.get("progress") or 0))
+
     exact = [row for row in rows if _normalized(row.get("name", "")) == title]
-    if len(exact) == 1:
-        return exact[0]
-    if len(exact) > 1:
-        exact = [row for row in exact if same_size(row)]
-        return exact[0] if len(exact) == 1 else None
+    if exact:
+        return single(exact) or single([row for row in exact if same_size(row)])
     loose = []
     for row in rows:
         name = _normalized(row.get("name", ""))
         if len(name) >= 8 and (name in title or title in name) and same_size(row):
             loose.append(row)
-    return loose[0] if len(loose) == 1 else None
+    return single(loose)
 
 
 def _describe(settings: AppSettings, row: dict | None) -> dict[str, Any]:

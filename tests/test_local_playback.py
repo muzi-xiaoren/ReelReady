@@ -68,6 +68,14 @@ class LegacyMatchTests(unittest.TestCase):
         rows.append({'name': 'Dune.Part.Two.2024.2160p.WEB-DL', 'size': 50_000, 'hash': 'c'})
         self.assertEqual(playback.match_legacy(record, rows)['hash'], 'a')
 
+    def test_cross_seeded_copies_share_one_location(self):
+        record = {'title': 'Dogville 2003 GER BluRay 1080p x265 10bit DDP5.1 MNHD-FRDS', 'size_bytes': 12_870}
+        rows = [{'name': '狗镇.Dogville.2003.GER.BluRay.1080p.x265.10bit.DDP5.1.MNHD-FRDS', 'size': 12_870,
+                 'hash': h, 'progress': p, 'content_path': '/downloads/狗镇.Dogville'} for h, p in (('a', 0.5), ('b', 1), ('c', 1))]
+        self.assertIn(playback.match_legacy(record, rows)['hash'], ('b', 'c'))
+        rows[2]['content_path'] = '/elsewhere/狗镇.Dogville'
+        self.assertIsNone(playback.match_legacy(record, rows))
+
     def test_loose_match_needs_size(self):
         record = {'title': '沙丘2 Dune.Part.Two.2024.2160p.WEB-DL [中字]', 'size_bytes': 10_000}
         rows = [{'name': 'Dune.Part.Two.2024.2160p.WEB-DL', 'size': 99_000, 'hash': 'a'}]
