@@ -11,7 +11,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import load_only
 
 from ..db import session_scope
-from ..downloader import DownloaderError, QBittorrent
+from ..downloader import DownloaderError, QBittorrent, torrent_info_hash
 from ..models import Movie, MovieStatus, Site, Setting, now
 from ..settings import AppSettings, SETTINGS_KEY
 from ..sites import BaseSite, LoginExpired, MovieQuery, SiteError, build_site, snapshot
@@ -329,6 +329,7 @@ def _fetch_torrent(settings: AppSettings, site: BaseSite, torrent: TorrentInfo) 
 def _download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: TorrentInfo) -> bool:
     try:
         content = _fetch_torrent(settings, site, torrent)
+        info_hash = torrent_info_hash(content)
         with QBittorrent(settings.qbittorrent) as qb:
             qb.add_torrent(content, f"{torrent.site_name}-{torrent.torrent_id}.torrent")
     except LoginExpired as exc:
@@ -361,6 +362,7 @@ def _download(settings: AppSettings, movie_id: int, site: BaseSite, torrent: Tor
                 "size_bytes": torrent.size_bytes,
                 "detail_url": torrent.detail_url,
                 "at": now().isoformat(sep=" "),
+                **({"hash": info_hash} if info_hash else {}),
             },
         )
         add_event(

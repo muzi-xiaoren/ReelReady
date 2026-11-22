@@ -623,6 +623,7 @@
           var scrollY = window.scrollY;
           view.replaceWith(replacement);
           if (window.htmx) htmx.process(replacement);
+          document.dispatchEvent(new CustomEvent('reelready:movies-replaced', {detail: {root: replacement}}));
           syncGalleryJobStatus();
           syncGalleryPreferences();
           window.scrollTo(0, scrollY);
