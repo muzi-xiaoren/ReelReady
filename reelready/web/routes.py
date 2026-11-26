@@ -1,4 +1,3 @@
-import hmac
 import json
 import hashlib
 import logging
@@ -12,7 +11,6 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Redirect
 from sqlalchemy import and_, case, delete, func, select
 from sqlalchemy.orm import defer
 
-from .. import config
 from ..db import session_scope
 from ..cookiecloud import synced_cookie_hosts
 from ..downloader import DownloaderError, QBittorrent
@@ -36,7 +34,6 @@ from ..services.pt import _download_lock, download_candidate, release_wait_reaso
 from ..services.sites import add_site, detected_sites, load_cookiecloud, discovery_identity, hidden_discovery_sites, set_discovery_hidden
 from ..services.site_tests import queue_site_test
 from ..services.movie_metadata import queue_metadata, metadata_pending
-from ..services.playback import local_status, movie_status
 from .forms import REGIONS
 from ..site_identity import site_identity
 from ..settings import EMAIL_PRESETS, SECTIONS, load_settings, save_settings, update_section
@@ -54,9 +51,6 @@ TABS = [MovieStatus.MONITORING, MovieStatus.CANDIDATE, MovieStatus.COMPLETED, Mo
 
 
 def _render(request: Request, name: str, **context) -> HTMLResponse:
-    if 'playback_helper' not in context:
-        playback = load_settings().playback
-        context['playback_helper'] = {'port': playback.helper_port, 'token': playback.helper_token}
     if name in {'movies.html', 'events.html', 'sites.html', 'settings.html'}:
         context['gallery_shell'] = True
         if 'tabs' not in context:
@@ -743,44 +737,3 @@ def test_tmdb() -> Response:
     except TMDBError as exc:
         return toast(str(exc), "error")
     return toast(f"连接成功（{movie.title}）")
-
-
-@router.get('/playback/status')
-def playback_status(ids: str = '') -> JSONResponse:
-    movie_ids = [int(item) for item in ids.split(',') if item.strip().isdigit()]
-    try:
-        status = local_status(load_settings(), movie_ids)
-    except DownloaderError as exc:
-        return JSONResponse({'error': str(exc), 'movies': {}})
-    return JSONResponse({'movies': {str(movie_id): value for movie_id, value in status.items()}})
-
-
-@router.get('/playback/movies/{movie_id}')
-def playback_movie(request: Request, movie_id: int) -> JSONResponse:
-    """What the local helper should open; only the helper knows the token."""
-    settings = load_settings()
-    token = request.headers.get('X-ReelReady-Token', '')
-    if not hmac.compare_digest(token.encode(), settings.playback.helper_token.encode()):
-        raise HTTPException(403)
-    status = movie_status(settings, movie_id)
-    return JSONResponse({**status, 'player': settings.playback.player, 'player_path': settings.playback.player_path},
-                        headers={'Cache-Control': 'no-store'})
-
-
-@router.get('/playback/helper.py')
-def playback_helper(request: Request) -> Response:
-    settings = load_settings().playback
-    source = (config.PACKAGE_DIR / 'local_helper.py').read_text(encoding='utf-8')
-    values = {
-        'SERVER': json.dumps(str(request.base_url).rstrip('/')),
-        'TOKEN': json.dumps(settings.helper_token),
-        'PORT': str(settings.helper_port),
-    }
-    lines = []
-    for line in source.splitlines():
-        name = line.split(' = ', 1)[0]
-        lines.append(f'{name} = {values.pop(name)}' if name in values and ' = ' in line else line)
-    return Response('\n'.join(lines) + '\n', media_type='text/x-python; charset=utf-8', headers={
-        'Content-Disposition': 'attachment; filename="reelready-helper.py"',
-        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
-    })

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/static/style.css?v={{ static_revision['style.css'] }}">
   <script src="/static/vendor/htmx.min.js"></script>
 </head>
-<body hx-boost="false"{% if playback_helper %} data-playback-port="{{ playback_helper.port }}" data-playback-token="{{ playback_helper.token }}"{% endif %} class="{{ 'library-shell' if gallery_shell }} {% block body_class %}{% endblock %}">
+<body hx-boost="false" class="{{ 'library-shell' if gallery_shell }} {% block body_class %}{% endblock %}">
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/movies">
@@ -48,6 +48,5 @@
   {% include 'partials/ratings_dialogs.html' %}
   <script src="/static/app.js?v={{ static_revision['app.js'] }}"></script>
   <script src="/static/ratings.js?v={{ static_revision['ratings.js'] }}"></script>
-  <script src="/static/playback.js?v={{ static_revision['playback.js'] }}"></script>
 </body>
 </html>

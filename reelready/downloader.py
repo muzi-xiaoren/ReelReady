@@ -1,7 +1,5 @@
 """qBittorrent Web API v2 client."""
 
-import hashlib
-
 import httpx
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
@@ -12,45 +10,6 @@ from .settings import QBittorrentSettings
 
 class DownloaderError(Exception):
     pass
-
-
-def _bencode_end(data: bytes, pos: int) -> int:
-    """Index just past the bencoded value starting at ``pos``."""
-    lead = data[pos:pos + 1]
-    if lead == b"i":
-        return data.index(b"e", pos) + 1
-    if lead in (b"l", b"d"):
-        pos += 1
-        while data[pos:pos + 1] != b"e":
-            if not data[pos:pos + 1]:
-                raise ValueError("unterminated container")
-            pos = _bencode_end(data, pos)
-        return pos + 1
-    if lead.isdigit():
-        colon = data.index(b":", pos)
-        end = colon + 1 + int(data[pos:colon])
-        if end > len(data):
-            raise ValueError("truncated string")
-        return end
-    raise ValueError("invalid bencode")
-
-
-def torrent_info_hash(content: bytes) -> str | None:
-    """The v1 info-hash qBittorrent reports for a .torrent file, or None if unreadable."""
-    try:
-        if content[:1] != b"d":
-            return None
-        pos = 1
-        while content[pos:pos + 1] != b"e":
-            key_end = _bencode_end(content, pos)
-            key = content[content.index(b":", pos) + 1:key_end]
-            value_end = _bencode_end(content, key_end)
-            if key == b"info":
-                return hashlib.sha1(content[key_end:value_end]).hexdigest()
-            pos = value_end
-    except (ValueError, IndexError):
-        return None
-    return None
 
 
 class QBittorrent:
@@ -135,22 +94,3 @@ class QBittorrent:
             raise DownloaderError("qBittorrent 未授权，请检查用户名和密码")
         if resp.status_code != 200 or resp.text.strip() == "Fails.":
             raise DownloaderError(f"qBittorrent 添加种子失败: {resp.text.strip() or resp.status_code}")
-
-    def torrents(self, hashes: list[str] | None = None) -> list[dict]:
-        """Torrent rows from qBittorrent; all torrents (in the configured category) without hashes."""
-        self.login()
-        params: dict[str, str] = {}
-        if hashes:
-            params["hashes"] = "|".join(hashes)
-        elif self.config.category:
-            params["category"] = self.config.category
-        resp = self._request("GET", "/torrents/info", params=params)
-        if resp.status_code == 403:
-            raise DownloaderError("qBittorrent 未授权，请检查用户名和密码")
-        if resp.status_code != 200:
-            raise DownloaderError(f"qBittorrent 返回 HTTP {resp.status_code}")
-        try:
-            rows = resp.json()
-        except ValueError as exc:
-            raise DownloaderError("qBittorrent 返回了无法识别的种子列表") from exc
-        return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []

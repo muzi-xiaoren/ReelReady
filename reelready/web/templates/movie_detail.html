@@ -108,16 +108,6 @@
         {% else %}<p class="muted">等待符合条件的资源</p>{% endif %}
       </div>
       {% else %}<p class="help">上线确认后再搜索资源，避免提前下载错误片源。</p>{% endif %}
-      {% if movie.downloaded %}
-      <div class="playback-panel" data-playback="{{ movie.id }}">
-        <p class="playback-state" data-playback-state><span class="faint">正在读取 qBittorrent 中的下载状态…</span></p>
-        <div class="playback-actions">
-          <button class="btn btn-primary" type="button" data-playback-action="play" data-movie-id="{{ movie.id }}">{{ icon("play") }}<span data-playback-label>播放</span></button>
-          <button class="btn" type="button" data-playback-action="folder" data-movie-id="{{ movie.id }}">{{ icon("folder") }}打开文件夹</button>
-          <button class="btn" type="button" data-playback-action="copy" data-movie-id="{{ movie.id }}">{{ icon("copy") }}复制路径</button>
-        </div>
-      </div>
-      {% endif %}
       {% set download_events = events | selectattr('kind', 'in', ['download_failed', 'downloaded']) | list %}
       {% if download_events and download_events[0].kind == 'download_failed' and not movie.downloaded %}<div class="hero-download-error"><strong>上次提交失败</strong><p>{{ download_events[0].message.split('\n')[-1] }}</p><a href="/settings#qbittorrent">检查下载器设置 →</a></div>{% endif %}
     </div>
