@@ -4,6 +4,7 @@ Each section is a pydantic model. Field ``title`` / ``description`` double as th
 the settings page, which is rendered generically from these models.
 """
 
+import re
 import secrets
 import string
 from collections.abc import Callable
@@ -82,6 +83,38 @@ class QBittorrentSettings(BaseModel):
     save_path: str = _field("", "保存路径", r"留空用 qBittorrent 默认路径，例如 D:\Movies")
     category: str = _field("", "分类", "可留空")
     tags: str = _field("", "标签", "可留空，多个用逗号分隔")
+
+
+PLAYERS = {
+    "system": "系统默认播放器",
+    "potplayer": "PotPlayer",
+    "vlc": "VLC",
+    "mpv": "mpv",
+    "custom": "自定义程序",
+}
+
+
+class PlaybackSettings(BaseModel):
+    player: str = _field("system", "默认播放器", "点「播放」时使用，修改后立即生效，无需重新导入注册表。PotPlayer、VLC、mpv 会自动查找安装位置。", choices=PLAYERS)
+    player_path: str = _field("", "播放器程序路径", r"选「自定义程序」时必填；其他播放器找不到时也可在这里指定，例如 C:\Program Files\DAUM\PotPlayer\PotPlayerMini64.exe")
+    path_from: str = _field("", "qBittorrent 中的路径前缀", "qBittorrent 也在 Docker 里时填写它看到的下载目录，例如 /downloads；qBittorrent 直接装在 Windows 上则留空。")
+    path_to: str = _field("", "本机对应路径", r"上一项在这台电脑上的实际位置，例如 D:\Movies")
+
+    def host_path(self, path: str) -> str:
+        """Translate a path seen by qBittorrent into the matching path on this computer."""
+        source = self.path_from.strip().rstrip("/\\")
+        target = self.path_to.strip().rstrip("/\\")
+        if not (source and target):
+            return path
+        normalized = path.replace("\\", "/")
+        prefix = source.replace("\\", "/")
+        windows = bool(re.match(r"^[A-Za-z]:", prefix))
+        matches = normalized.lower().startswith(prefix.lower()) if windows else normalized.startswith(prefix)
+        if not matches or normalized[len(prefix):len(prefix) + 1] not in ("", "/"):
+            return path
+        rest = normalized[len(prefix):].lstrip("/")
+        separator = "\\" if re.match(r"^[A-Za-z]:", target) or "\\" in target else "/"
+        return target + (separator + rest.replace("/", separator) if rest else "")
 
 
 EMAIL_PRESETS: dict[str, dict[str, Any]] = {
@@ -167,6 +200,7 @@ class AppSettings(BaseModel):
     pt: PTSettings = Field(default_factory=PTSettings)
     rules: TorrentRules = Field(default_factory=TorrentRules)
     qbittorrent: QBittorrentSettings = Field(default_factory=QBittorrentSettings)
+    playback: PlaybackSettings = Field(default_factory=PlaybackSettings)
     email: EmailSettings = Field(default_factory=EmailSettings)
     tmdb: TMDBSettings = Field(default_factory=TMDBSettings)
     network: NetworkSettings = Field(default_factory=NetworkSettings)
@@ -182,6 +216,7 @@ SECTIONS: list[tuple[str, str]] = [
     ("pt", "PT 搜索"),
     ("rules", "选种规则"),
     ("qbittorrent", "qBittorrent"),
+    ("playback", "本地播放"),
     ("email", "邮件通知"),
     ("events", "动态记录"),
     ("tmdb", "TMDB"),

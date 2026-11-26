@@ -13,7 +13,7 @@
     </div>
     <button type="button" class="personal-edit {{ 'has-review' if m.personal_review }}" data-review="{{ m.id }}" title="写评论与同步" aria-label="写评论与同步">{{ icon('edit') }}</button>
   </div>
-  <div class="movie-actions">
+  <div class="movie-actions"{% if m.status == "completed" and m.downloaded %} data-playback="{{ m.id }}"{% endif %}>
     {% if m.status == "candidate" %}
       <button class="btn btn-primary btn-sm" hx-post="/movies/{{ m.id }}/approve"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("check") }}监测</button>
@@ -25,7 +25,12 @@
       <button class="btn btn-sm btn-icon btn-danger" title="抛弃（不再监测，也不会再被收集）" hx-post="/movies/{{ m.id }}/ignore"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}</button>
     {% elif m.status == "completed" %}
+      {% if m.downloaded %}
+      <button class="btn btn-sm btn-primary" type="button" data-playback-action="play" data-movie-id="{{ m.id }}" title="用默认播放器播放">{{ icon("play") }}<span data-playback-label>播放</span></button>
+      <button class="btn btn-sm btn-icon" type="button" data-playback-action="folder" data-movie-id="{{ m.id }}" title="打开所在文件夹" aria-label="打开《{{ m.title }}》所在文件夹">{{ icon("folder") }}</button>
+      {% else %}
       <a class="btn btn-sm" href="/movies/{{ m.id }}">{{ icon("info") }}详情</a>
+      {% endif %}
       <button class="btn btn-sm btn-icon btn-danger" title="抛弃（看不下去的片，移入「已抛弃」）" hx-post="/movies/{{ m.id }}/ignore"
               hx-target="closest .movie-card" hx-swap="delete swap:200ms">{{ icon("x") }}</button>
     {% elif m.status in ("ignored", "watched") %}

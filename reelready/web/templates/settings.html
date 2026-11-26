@@ -14,7 +14,7 @@
 
 <div class="settings-layout">
   <nav class="settings-nav" aria-label="设置分类">
-    {% for target, label, keys, symbol in [('collect','收集与检测','collect check','film'),('rules','搜索与选种','pt rules','search'),('qbittorrent','下载器','qbittorrent','download'),('email','通知与动态','email events','activity'),('tmdb','网络与资料','tmdb network','globe'),('backup','云备份','backup','copy'),('data-backup','导入导出','data-backup','undo')] %}
+    {% for target, label, keys, symbol in [('collect','收集与检测','collect check','film'),('rules','搜索与选种','pt rules','search'),('qbittorrent','下载器','qbittorrent playback','download'),('email','通知与动态','email events','activity'),('tmdb','网络与资料','tmdb network','globe'),('backup','云备份','backup','copy'),('data-backup','导入导出','data-backup','undo')] %}
     <a href="#{{ target }}" data-settings-groups="{{ keys }}">{{ icon(symbol) }}<span>{{ label }}</span></a>
     {% endfor %}
   </nav>
@@ -53,6 +53,7 @@
           {% endif %}
         </div>
       </form>
+      {% if key == 'playback' %}{% include 'partials/playback_protocol.html' %}{% endif %}
       {% if key == 'tmdb' %}<div class="rating-settings-entry"><span class="help">个人评分同步需另外连接 TMDB 账户。</span><button class="btn" type="button" data-rating-sync>连接账户与全局同步</button></div>{% endif %}
       {% endif %}
     </section>

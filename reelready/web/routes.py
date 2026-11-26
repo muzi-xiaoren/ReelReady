@@ -34,6 +34,8 @@ from ..services.pt import _download_lock, download_candidate, release_wait_reaso
 from ..services.sites import add_site, detected_sites, load_cookiecloud, discovery_identity, hidden_discovery_sites, set_discovery_hidden
 from ..services.site_tests import queue_site_test
 from ..services.movie_metadata import queue_metadata, metadata_pending
+from ..services import protocol
+from ..services.playback import local_status, movie_status
 from .forms import REGIONS
 from ..site_identity import site_identity
 from ..settings import EMAIL_PRESETS, SECTIONS, load_settings, save_settings, update_section
@@ -737,3 +739,43 @@ def test_tmdb() -> Response:
     except TMDBError as exc:
         return toast(str(exc), "error")
     return toast(f"连接成功（{movie.title}）")
+
+
+@router.get('/playback/status')
+def playback_status(ids: str = '') -> JSONResponse:
+    movie_ids = [int(item) for item in ids.split(',') if item.strip().isdigit()]
+    try:
+        status = local_status(load_settings(), movie_ids)
+    except DownloaderError as exc:
+        return JSONResponse({'error': str(exc), 'movies': {}})
+    return JSONResponse({'movies': {str(movie_id): value for movie_id, value in status.items()}})
+
+
+@router.get('/playback/movies/{movie_id}')
+def playback_movie(movie_id: int) -> JSONResponse:
+    """What the reelready:// link handler on this computer should open, and with which player."""
+    settings = load_settings()
+    status = movie_status(settings, movie_id)
+    return JSONResponse({**status, 'player': settings.playback.player, 'player_path': settings.playback.player_path},
+                        headers={'Cache-Control': 'no-store'})
+
+
+def _reg_download(body: bytes, filename: str) -> Response:
+    return Response(body, media_type='application/octet-stream', headers={
+        'Content-Disposition': f'attachment; filename="{filename}"',
+        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+    })
+
+
+@router.get('/playback/reelready-protocol.reg')
+def playback_protocol_install(request: Request) -> Response:
+    try:
+        body = protocol.install_reg(str(request.base_url))
+    except ValueError as exc:
+        raise HTTPException(400, '无法用当前网址生成注册表文件') from exc
+    return _reg_download(body, 'reelready-protocol.reg')
+
+
+@router.get('/playback/reelready-protocol-uninstall.reg')
+def playback_protocol_uninstall() -> Response:
+    return _reg_download(protocol.uninstall_reg(), 'reelready-protocol-uninstall.reg')

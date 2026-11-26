@@ -18,6 +18,7 @@
 - **PT 搜索 + 自动下载**：支持馒头（官方 API）、Rousi Pro（API Key）、NexusPHP 站点和 Monikadesign。每次扫描从所有站点的结果里挑出最符合规则的一个种子，推送到 qBittorrent
 - **错片拦截**：自动下载必须有独立 IMDb 与目标一致；列表缺少身份信息时核对种子详情，每部每轮最多补查 10 个候选。不同 IMDb、身份未核实或未确认上线的资源归入「不符合条件」，禁止直接下载；仅有购买记录时会排除预售风险，不覆盖未来数字版日期。
 - **CookieCloud 同步 cookie**：在浏览器里登录 PT 站就行，cookie 自动同步过来；ReelReady 还会从同步的 cookie 里自动识别你登录过的 NexusPHP 站
+- **本地播放**：「已完成」影片的海报上和详情页里有「播放」「打开文件夹」按钮，详情页还能复制文件路径。下载进度和文件位置从 qBittorrent 读取，未下完时显示百分比。默认播放器可在「设置 → 下载器 → 本地播放」选择系统默认、PotPlayer、VLC、mpv 或自定义程序，修改即时生效。ReelReady 在 Docker 里无法启动电脑上的程序，需要在 Windows 上双击导入一次设置页提供的 `reelready-protocol.reg`，注册 `reelready://` 链接，无常驻程序；同页提供卸载文件。qBittorrent 也在 Docker 里时，填写路径映射把容器路径换成本机路径
 - **邮件通知**：成功提交下载、下载失败、站点登录失效时单独发邮件；定档、上线、新的待确认影片每天汇总一封。提交下载邮件标注事件发生时间，通知逐封保存发送状态并防止并发重复发送。内置 QQ、163、126、Gmail、iCloud、Outlook 等常见邮箱的 SMTP 预设，支持多个收件人
 - **动态管理**：支持手动删除记录；保留天数留空表示永久保留，填写后每天自动清理到期动态
 - **导入导出**：在「设置 → 导入导出」选择「全部信息」或「仅影片与动态」导出 JSON。「全部信息」包含所有设置、站点、CookieCloud 同步数据、任务记录及影片和动态，换机器或重装后可直接恢复配置；文件内含明文密码、Cookie 和 API Key，请妥善保存，勿公开分享。完整导入会覆盖同名设置和站点配置，影片按豆瓣 / TMDB / IMDb 编号合并，已有影片只补全空缺信息，历史动态不会重复发邮件，导入前自动备份数据库（只保留最近 3 份）。兼容旧版仅记录的备份；海报缓存不包含在内，会自动重新获取；过期 Cookie、不同机器的下载器/代理地址仍需更新
@@ -89,6 +90,23 @@ docker compose up -d
 站点识别结合本地 [PT-Depiler](https://github.com/pt-plugins/PT-depiler) 公开站点库和 NexusPHP Cookie 特征，不需要向第三方发送 Cookie。只把含非空、未过期登录 Cookie 的站点列为候选，浏览标记、广告及 Cloudflare Cookie 不作为登录依据。服务端是否仍认可登录，需要添加后测试；其他架构的 PT 站单独列为浏览记录。添加会立即入列，连接测试在独立后台队列进行（最多 2 个并行、16 个等待及测试中任务），页面自动更新测试结果；相同站点及已知别名由数据库唯一约束防止重复添加。漏识别的站点可选择「NexusPHP」，在地址框中选择已同步域名或手动填写。站点库来源版本记录在 `reelready/sites/catalog.json`，MIT 声明保存在同目录的 `PT_DEPILER_LICENSE.txt`；可用 `python tools/import_pt_depiler.py <PT-Depiler源码目录>` 更新本地站点库。
 
 > cookie 以加密形式保存在本机的 `data/` 目录，不会上传到任何第三方。
+
+## 本地播放（可选）
+
+「已完成」影片的海报上和详情页里有「播放」「打开文件夹」按钮。ReelReady 在 Docker 里无法直接启动电脑上的程序，所以要在 Windows 上注册一次 `reelready://` 链接：点按钮时浏览器把链接交给 Windows，再由 Windows 打开播放器或资源管理器。不需要常驻程序，也不用开机启动，只在做过注册的电脑上有效。
+
+1. 打开「设置 → 下载器 → 本地播放」，选择默认播放器（系统默认、PotPlayer、VLC、mpv 或自定义程序）。改播放器立即生效，不用重新注册
+2. qBittorrent 直接装在 Windows 上时，路径映射留空；qBittorrent 也在 Docker 里时，填它看到的下载目录（如 `/downloads`）和这台电脑上的实际位置（如 `D:\Movies`）
+3. 下载同页的 `reelready-protocol.reg` 并双击导入。它只写入当前用户的 `HKEY_CURRENT_USER\Software\Classes\reelready`，不需要管理员权限。如果浏览器拦截了 `.reg` 下载，可在下载记录里选择「保留」，或在 PowerShell 里运行（把地址换成你访问 ReelReady 的地址）：
+   ```powershell
+   $f = "$env:TEMP\reelready-protocol.reg"; Invoke-WebRequest "http://localhost:8765/playback/reelready-protocol.reg" -OutFile $f -UseBasicParsing; reg import $f
+   ```
+4. **彻底重启浏览器**。Chrome 和 Edge 只在启动时识别新注册的链接：Chrome 关闭所有窗口即可；Edge 默认开着「启动增强」，关窗口后进程仍在后台，需要在任务管理器里结束所有「Microsoft Edge」进程，或在「设置 → 系统和性能」里关闭「启动增强」和「关闭 Microsoft Edge 后继续运行后台扩展和应用」后再重开
+5. 第一次点「播放」时，浏览器会询问是否打开「控制台窗口主机」（Windows 用它在后台运行打开播放器的脚本，不会弹出黑窗口）。勾选「始终允许」后点「打开」，以后不再询问
+
+点击后播放器通常 1–5 秒内出现。出错时（例如文件已删除、找不到播放器）会弹出「ReelReady」提示框说明原因。ReelReady 的访问地址改变后需要重新导入；不想用了，下载同页的 `reelready-protocol-uninstall.reg` 双击即可删除注册的链接。
+
+**点了没反应时**：确认已导入注册表，并按第 4 步彻底重启浏览器。浏览器根本没有弹出询问框，通常就是没有重启；弹出了但没打开，请检查路径映射和播放器设置。
 
 ## 工作流程
 

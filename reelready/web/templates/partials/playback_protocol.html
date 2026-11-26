@@ -1,0 +1,15 @@
+{% from "partials/icons.html" import icon %}
+<div class="playback-helper">
+  <div class="playback-helper-head">
+    <h3>在这台电脑上启用</h3>
+  </div>
+  <p class="help">ReelReady 在 Docker 里运行，无法直接启动电脑上的程序。导入下面的注册表文件后，Windows 会认识 reelready:// 链接，点「播放」「打开文件夹」时由系统打开播放器或资源管理器。没有常驻程序，也不需要开机启动。</p>
+  <ol class="playback-helper-steps">
+    <li>下载 <a class="btn btn-sm" href="/playback/reelready-protocol.reg" download>{{ icon("download") }}reelready-protocol.reg</a>，双击并在提示中点「是」。只写入当前用户的设置，不需要管理员权限。</li>
+    <li>导入后<strong>完全关闭并重新打开浏览器</strong>，浏览器只在启动时识别新注册的链接。</li>
+    <li>第一次点「播放」时，浏览器会询问是否打开「控制台窗口主机」（Windows 用它在后台打开播放器），勾选「始终允许」后不再询问。</li>
+    <li>更换播放器后立即生效；ReelReady 的访问地址变了才需要重新导入。</li>
+  </ol>
+  <p class="help">浏览器拦截了 .reg 下载时，可在浏览器的下载记录里选择「保留」，或在 PowerShell 中运行：<br><code>$f = "$env:TEMP\reelready-protocol.reg"; Invoke-WebRequest "{{ request.base_url }}playback/reelready-protocol.reg" -OutFile $f -UseBasicParsing; reg import $f</code></p>
+  <p class="help">不想用了：下载 <a href="/playback/reelready-protocol-uninstall.reg" download>reelready-protocol-uninstall.reg</a> 并双击，即可删除注册的链接。</p>
+</div>

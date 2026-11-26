@@ -19,6 +19,7 @@ Movies reach cinemas long before they are released online, and private trackers 
   - Streaming: TMDB watch providers (JustWatch data) show it can be streamed, rented or bought, or Douban lists online platforms
 - **PT search and automatic download**: M-Team (official API), Rousi Pro (API key), NexusPHP sites and Monikadesign. Each scan picks the single best torrent across all sites and pushes it to qBittorrent
 - **Cookies via CookieCloud**: just stay logged in to your sites in the browser and cookies are synced automatically. ReelReady also detects the NexusPHP sites you are logged into from the synced cookies
+- **Local playback**: completed movies get Play and Open folder buttons on their posters and detail pages, plus Copy path on the detail page. Progress and file locations come from qBittorrent, and unfinished downloads show a percentage. Choose the system default, PotPlayer, VLC, mpv or a custom program under Settings → Downloader → Local playback; changes apply immediately. Docker cannot launch programs on your computer, so import `reelready-protocol.reg` from that page once on Windows: it registers `reelready://` links with nothing left running, and an uninstall file is provided. If qBittorrent also runs in Docker, set a path mapping from its paths to local ones
 - **Email**: successful download submission, download failures and expired site logins are sent separately; dated / streaming / new candidates go into a daily digest. Submission mail includes the original event time, and each sent message is recorded separately with concurrent sending prevented. SMTP presets for QQ, 163, 126, Gmail, iCloud, Outlook and more; multiple recipients supported
 - **Event management**: delete individual records or set a retention period; leaving it blank keeps records permanently
 - **Import / export**: under Settings → Import / Export, export either "Everything" or "Movies and events only" as JSON. "Everything" also carries all settings, sites, CookieCloud data and job records, so a new machine or reinstall is restored in one step; that file contains plaintext passwords, cookies and API keys, so keep it private. A full import overwrites settings and site configuration with the same name. Movies merge by Douban / TMDB / IMDb id and only missing details of existing movies are filled in; imported events are never mailed again, and the database is backed up first
@@ -88,6 +89,23 @@ On the **Sites** page:
 From then on, logging in to a site in the browser is all it takes. If a cookie expires you get an email; log in again and the next sync fixes it.
 
 > Cookies are stored encrypted in your local `data/` folder and never sent to any third party.
+
+## Local playback (optional)
+
+Completed movies get Play and Open folder buttons on their posters and detail pages. ReelReady runs in Docker and cannot start programs on your computer, so you register a `reelready://` link on Windows once: the browser hands the link to Windows, which opens the player or Explorer. Nothing keeps running and nothing starts at login. It only works on computers where the link is registered.
+
+1. Under Settings → Downloader → Local playback, choose the default player (system default, PotPlayer, VLC, mpv or a custom program). Changes apply immediately without registering again
+2. If qBittorrent runs directly on Windows, leave the path mapping empty. If it also runs in Docker, enter the download folder it sees (e.g. `/downloads`) and its real location on this computer (e.g. `D:\Movies`)
+3. Download `reelready-protocol.reg` from that page and double-click it. It only writes `HKEY_CURRENT_USER\Software\Classes\reelready` and needs no administrator rights. If the browser blocks the `.reg` download, choose "Keep" in the download list, or run this in PowerShell (replace the address with the one you use for ReelReady):
+   ```powershell
+   $f = "$env:TEMP\reelready-protocol.reg"; Invoke-WebRequest "http://localhost:8765/playback/reelready-protocol.reg" -OutFile $f -UseBasicParsing; reg import $f
+   ```
+4. **Fully restart the browser.** Chrome and Edge only pick up newly registered links when they start. Closing all Chrome windows is enough. Edge has Startup boost on by default and keeps running after its windows close, so end every "Microsoft Edge" process in Task Manager, or turn off "Startup boost" and "Continue running background extensions and apps when Microsoft Edge is closed" under Settings → System and performance, then reopen it
+5. The first time you click Play, the browser asks whether to open "Console Window Host" (Windows uses it to run the launcher script in the background, without a console window). Tick "Always allow" and click Open, and it won't ask again
+
+The player usually appears within 1–5 seconds. If something goes wrong, such as a deleted file or a missing player, a "ReelReady" message box explains why. Import the file again if the address you use for ReelReady changes. To remove the link, download `reelready-protocol-uninstall.reg` from the same page and double-click it.
+
+**If nothing happens when you click:** make sure the registry file was imported and the browser was fully restarted as in step 4. If no prompt appears at all, the browser usually hasn't been restarted. If the prompt appears but nothing opens, check the path mapping and player settings.
 
 ## Local development
 

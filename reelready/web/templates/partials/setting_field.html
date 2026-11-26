@@ -1,6 +1,6 @@
 {% from "partials/icons.html" import icon %}
 {% macro setting_field(key, f, label=none) %}
-          <div class="field {{ 'bool' if f.kind == 'bool' }} {{ 'wide' if f.kind in ('list', 'regions', 'resolutions') or f.name in ('user_agent', 'url', 'proxy_url', 'api_key') }} {{ 'rule-preference' if key == 'rules' and f.kind == 'bool' }}"
+          <div class="field {{ 'bool' if f.kind == 'bool' }} {{ 'wide' if f.kind in ('list', 'regions', 'resolutions') or f.name in ('user_agent', 'url', 'proxy_url', 'api_key', 'player_path') }} {{ 'rule-preference' if key == 'rules' and f.kind == 'bool' }}"
                {% if f.custom_only %}data-custom-only{% endif %}>
             {% if f.kind == "bool" %}
               <label class="switch">
