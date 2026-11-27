@@ -2,8 +2,9 @@ from datetime import datetime
 from enum import IntEnum, StrEnum
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, event
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm.base import NO_VALUE
 
 from .db import Base
 
@@ -86,6 +87,8 @@ class Movie(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # When the movie last moved into its current list; sorts "recently moved" first.
+    status_changed_at: Mapped[datetime | None] = mapped_column(DateTime, default=now)
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime)
     last_pt_scan_at: Mapped[datetime | None] = mapped_column(DateTime)
 
@@ -180,3 +183,10 @@ class CookieCloudBlob(Base):
     encrypted: Mapped[str] = mapped_column(Text)
     crypto_type: Mapped[str] = mapped_column(String(32), default="legacy")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
+
+
+@event.listens_for(Movie.status, "set", active_history=True)
+def _remember_status_change(movie: Movie, value, old, _initiator) -> None:
+    # Constructor assignments have no previous value; the column default covers them.
+    if old is not None and old is not NO_VALUE and value != old:
+        movie.status_changed_at = now()

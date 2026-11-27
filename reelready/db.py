@@ -74,6 +74,15 @@ def init_db() -> None:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN metadata_checked_at DATETIME")
         if "watched_from_status" not in columns:
             connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN watched_from_status VARCHAR(16)")
+        if "status_changed_at" not in columns:
+            connection.exec_driver_sql("ALTER TABLE movies ADD COLUMN status_changed_at DATETIME")
+            # Best guess for existing records: watched / abandoned movies were usually last touched when marked.
+            connection.exec_driver_sql(
+                "UPDATE movies SET status_changed_at = CASE status "
+                "WHEN 'completed' THEN COALESCE(completed_at, updated_at) "
+                "WHEN 'monitoring' THEN COALESCE(approved_at, created_at) "
+                "WHEN 'candidate' THEN created_at ELSE updated_at END"
+            )
         job_columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(job_states)")}
         if "retry_count" not in job_columns:
             connection.exec_driver_sql("ALTER TABLE job_states ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")

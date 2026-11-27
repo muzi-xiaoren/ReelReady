@@ -587,6 +587,22 @@
   window.addEventListener('pagehide', saveMoviePosition);
   document.addEventListener('visibilitychange', function () { if (document.hidden) saveMoviePosition(); });
 
+  // Cards removed in place (restore, abandon, watched) must shrink the gallery width
+  // the server computed from the original count, or the remaining posters stretch.
+  function fitMovieGrid(grid) {
+    var count = grid.querySelectorAll(':scope > .movie-card').length;
+    var columns = Math.max(1, Math.min(count, 6));
+    grid.dataset.count = count;
+    grid.style.setProperty('--gallery-grid-max', (columns * 340 + (columns - 1) * 22) + 'px');
+  }
+  new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
+      if (mutation.removedNodes.length && mutation.target.classList && mutation.target.classList.contains('movie-grid')) {
+        fitMovieGrid(mutation.target);
+      }
+    });
+  }).observe(document.body, {childList: true, subtree: true});
+
   // Poll a small local revision, fetching HTML only when data actually changed.
   // One timer per page; hidden tabs make no polling requests.
   var movieTimer = null, movieRequest = null;

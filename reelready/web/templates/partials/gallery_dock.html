@@ -12,8 +12,20 @@
     </div>
   </details>
   <span class="gallery-dock-divider" aria-hidden="true"></span>
+  {% if nav == 'movies' and sort_options %}
+  {% set current_sort = (sort_options | selectattr('key', 'equalto', sort) | first) %}
+  <details class="gallery-sort" data-gallery-panel>
+    <summary class="gallery-dock-button" aria-label="排序：{{ current_sort.label }}" title="排序：{{ current_sort.label }}">{{ icon('sort') }}{% if sort != default_sort %}<span class="gallery-filter-dot" aria-hidden="true"></span>{% endif %}</summary>
+    <div class="gallery-popup gallery-sort-popup">
+      <div class="gallery-popup-heading">排序</div>
+      <nav class="gallery-sort-options" aria-label="影片排序">
+        {% for option in sort_options %}<a class="gallery-sort-option {{ 'active' if option.key == sort }}" href="{{ option.url }}" {% if option.key == sort %}aria-current="true"{% endif %}><span>{{ option.label }}</span>{{ icon('check') }}</a>{% endfor %}
+      </nav>
+    </div>
+  </details>
+  {% endif %}
   <details class="gallery-search" data-gallery-panel>
-    <summary class="gallery-dock-button" aria-label="搜索和筛选影片" title="搜索与筛选">{{ icon('search') }}{% if q or availability != 'all' or sort != 'newest' %}<span class="gallery-filter-dot" aria-hidden="true"></span>{% endif %}</summary>
+    <summary class="gallery-dock-button" aria-label="搜索和筛选影片" title="搜索与筛选">{{ icon('search') }}{% if q or availability != 'all' %}<span class="gallery-filter-dot" aria-hidden="true"></span>{% endif %}</summary>
     <div class="gallery-popup gallery-search-popup">
       <div class="gallery-popup-heading">搜索{% if tab == 'candidate' %}与筛选{% endif %}</div>
       {% if tab == 'candidate' %}
@@ -22,16 +34,15 @@
           {% for filter in candidate_filters %}<a class="candidate-filter {{ 'active' if availability == filter.key }}" href="{{ filter.url }}" data-availability="{{ filter.key }}" {% if availability == filter.key %}aria-current="page"{% endif %}>{{ filter.label }}<span>{{ filter.count }}</span></a>{% endfor %}
         </nav>
         <form class="candidate-toolbar" action="/movies" method="get">
-          <input type="hidden" name="tab" value="candidate"><input type="hidden" name="availability" value="{{ availability }}">
+          <input type="hidden" name="tab" value="candidate"><input type="hidden" name="availability" value="{{ availability }}"><input type="hidden" name="sort" value="{{ sort }}">
           <div class="search">{{ icon('search') }}<input type="search" name="q" value="{{ q }}" placeholder="搜索片名或原名" aria-label="搜索待确认影片"></div>
-          <label class="candidate-sort">排序<select name="sort" aria-label="待确认影片排序" onchange="this.form.requestSubmit()">{% for key, label in sort_options %}<option value="{{ key }}" {{ 'selected' if sort == key }}>{{ label }}</option>{% endfor %}</select></label>
           <button class="btn candidate-search-button" type="submit" aria-label="搜索待确认影片">{{ icon('search') }}<span>搜索</span></button>
         </form>
         <div class="candidate-result"><span>显示 {{ movies | length }} 部影片</span>{% if q or availability != 'all' %}<a href="{{ clear_filter_url }}">清除筛选</a>{% endif %}</div>
       </section>
       {% else %}
       <form class="gallery-search-form" method="get" action="/movies">
-        <input type="hidden" name="tab" value="{{ tab }}">
+        <input type="hidden" name="tab" value="{{ tab }}"><input type="hidden" name="sort" value="{{ sort }}">
         <input type="search" name="q" value="{{ q }}" placeholder="搜索片名或原名" aria-label="搜索影片">
         <button class="btn" type="submit">搜索</button>
       </form>

@@ -156,6 +156,8 @@ class PlaybackDbTests(unittest.TestCase):
         self.assertEqual(info['path'], r'D:\Movies\Old.Movie.2023.1080p')
         self.assertEqual(info['player'], 'system')
         self.assertEqual(missing['state'], 'not_downloaded')
+        self.assertLess(self.client.get('/playback/movies/2/handler').json()['age'], 5)
+        self.assertIsNone(self.client.get('/playback/movies/999/handler').json()['age'])
 
     def test_reg_downloads(self):
         response = self.client.get('/playback/reelready-protocol.reg')

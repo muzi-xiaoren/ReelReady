@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from reelready import config, db
@@ -74,10 +74,37 @@ class CandidateFilterTests(unittest.TestCase):
         page = self.page(q='Alice & Bob', availability='available', sort='douban')
         self.assertEqual(self.titles(page), ['Alice & Bob'])
         self.assertEqual(page.select_one('[name=q]')['value'], 'Alice & Bob')
-        self.assertEqual(page.select_one('option[selected]')['value'], 'douban')
+        self.assertEqual(page.select_one('[name=sort]')['value'], 'douban')
+        active = page.select_one('.gallery-sort-option.active')
+        self.assertIn('sort=douban', active['href'])
+        self.assertIn('q=Alice+%26+Bob', active['href'])
         for link in page.select('[data-availability]'):
             self.assertIn('q=Alice+%26+Bob', link['href'])
             self.assertIn('sort=douban', link['href'])
+
+    def test_sort_choice_is_remembered_per_list(self):
+        self.assertEqual(self.titles(self.page(sort='available'))[0], 'Available')
+        self.assertEqual(self.titles(self.page())[0], 'Available')
+        default = self.client.get('/movies', params={'tab': 'ignored'})
+        self.assertIn('最近抛弃', BeautifulSoup(default.text, 'html.parser').select_one('.gallery-sort-option.active').text)
+        self.assertEqual(self.titles(self.page(sort='newest'))[0], 'Unchecked')
+        self.assertEqual(self.titles(self.page())[0], 'Unchecked')
+        self.assertNotIn('reelready_sort_candidate', self.client.cookies)
+
+    def test_lists_sort_by_when_movies_were_moved_there(self):
+        with db.session_scope() as session:
+            for title in ('Dated', 'Available'):
+                movie = session.scalar(select(Movie).where(Movie.title == title))
+                self.assertIsNotNone(movie.status_changed_at)
+                movie.status_changed_at = None
+                movie.status = 'watched'
+                self.assertIsNotNone(movie.status_changed_at)
+                session.flush()
+            session.scalar(select(Movie).where(Movie.title == 'Dated')).status_changed_at = datetime(2020, 1, 1)
+        page = BeautifulSoup(self.client.get('/movies', params={'tab': 'watched'}).text, 'html.parser')
+        self.assertEqual(self.titles(page), ['Available', 'Dated'])
+        rated = BeautifulSoup(self.client.get('/movies', params={'tab': 'watched', 'sort': 'year'}).text, 'html.parser')
+        self.assertEqual(self.titles(rated), ['Dated', 'Available'])
 
     def test_background_stage_change_moves_candidate_between_filters(self):
         before = self.client.get('/movies/revision').json()['revision']

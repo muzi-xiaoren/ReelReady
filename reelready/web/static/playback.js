@@ -2,22 +2,30 @@
   'use strict';
 
   var statusCache = {};
-  var NOT_REGISTERED = '如果没有打开：请先在「设置 → 下载器 → 本地播放」导入注册表文件，导入后重启浏览器；只在导入过的电脑上可用。';
+  var NOT_LAUNCHED = '浏览器没有调用本地播放：请确认已在「设置 → 下载器 → 本地播放」导入注册表文件并完全重启浏览器，浏览器询问时选择「打开」。Edge 请在「设置 → 系统和性能」关闭「启动增强」，否则开机由启动增强打开的 Edge 不会打开本地链接。';
 
   function toast(message, level) {
     if (window.showToast) window.showToast(message, level);
   }
 
   function openLink(action, movieId) {
-    // Windows hands reelready:// links to the handler registered by the .reg file.
-    var blurred = false;
-    function onBlur() { blurred = true; }
-    window.addEventListener('blur', onBlur, {once: true});
-    setTimeout(function () {
-      window.removeEventListener('blur', onBlur);
-      if (!blurred && !document.hidden) toast(NOT_REGISTERED, 'warn');
-    }, 2500);
+    // Windows hands reelready:// links to the handler registered by the .reg file. The handler
+    // then asks ReelReady for the file, which is how the page knows the link really launched.
+    var started = Date.now();
+    toast(action === 'play' ? '正在打开播放器…' : '正在打开文件夹…');
     window.location.href = 'reelready://' + action + '/' + encodeURIComponent(movieId);
+    (function poll() {
+      fetch('/playback/movies/' + encodeURIComponent(movieId) + '/handler', {cache: 'no-store'})
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          var elapsed = (Date.now() - started) / 1000;
+          if (data.age !== null && data.age <= elapsed + 0.5) return;
+          // A browser prompt may still be waiting for the user, so give it time.
+          if (elapsed < 20) setTimeout(poll, 700);
+          else toast(NOT_LAUNCHED, 'warn');
+        })
+        .catch(function () {});
+    })();
   }
 
   function render(container, status) {

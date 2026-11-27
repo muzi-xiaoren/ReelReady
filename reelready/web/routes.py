@@ -1,6 +1,7 @@
 import json
 import hashlib
 import logging
+import time
 from contextlib import nullcontext
 from datetime import datetime
 from typing import Annotated
@@ -122,19 +123,41 @@ def home() -> RedirectResponse:
     return RedirectResponse("/movies", status_code=302)
 
 
+# The first option of each list is its default order.
+_TAB_SORTS = {
+    MovieStatus.CANDIDATE: [('newest', '最新加入'), ('available', '已上线优先')],
+    MovieStatus.MONITORING: [('progress', '上线进度'), ('moved', '最近加入监测')],
+    MovieStatus.COMPLETED: [('completed', '最近完成')],
+    MovieStatus.WATCHED: [('moved', '最近标记看过')],
+    MovieStatus.IGNORED: [('moved', '最近抛弃')],
+}
+_COMMON_SORTS = [('douban', '豆瓣评分最高'), ('tmdb', 'TMDB 评分最高'), ('year', '上映年份最新'),
+                 ('mine', '我的评分最高'), ('newest', '最新加入')]
+SORT_COOKIE = 'reelready_sort_'
+
+
+def sort_options_for(tab: str) -> list[tuple[str, str]]:
+    options = list(_TAB_SORTS[MovieStatus(tab)])
+    return options + [item for item in _COMMON_SORTS if item[0] not in dict(options)]
+
+
 @router.get("/movies", response_class=HTMLResponse)
 def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = "",
-                availability: str = 'all', sort: str = 'newest') -> HTMLResponse:
+                availability: str = 'all', sort: str = '') -> HTMLResponse:
     if tab not in {t.value for t in TABS}:
         tab = MovieStatus.MONITORING
     filter_labels = [('all', '全部'), ('available', '已上线'), ('dated', '已定档'),
                      ('unconfirmed', '暂未确认上线'), ('unchecked', '待检测')]
-    sort_options = [('newest', '最新加入'), ('available', '已上线优先'), ('douban', '豆瓣评分最高'),
-                    ('tmdb', 'TMDB 评分最高'), ('year', '上映年份最新')]
+    sort_options = sort_options_for(tab)
+    default_sort = sort_options[0][0]
     if availability not in dict(filter_labels) or tab != MovieStatus.CANDIDATE:
         availability = 'all'
-    if sort not in dict(sort_options) or tab != MovieStatus.CANDIDATE:
-        sort = 'newest'
+    chosen = sort in dict(sort_options)
+    if not chosen:
+        # Without an explicit choice, reuse the order last picked for this list.
+        sort = request.cookies.get(SORT_COOKIE + tab, '')
+        if sort not in dict(sort_options):
+            sort = default_sort
     q = q.strip()
     category = case(
         (Movie.stage >= Stage.STREAMING, 'available'),
@@ -150,10 +173,17 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
         if q:
             like = f"%{q}%"
             query = query.where(Movie.title.like(like) | Movie.original_title.like(like))
-        order = [{
-            MovieStatus.COMPLETED: Movie.completed_at.desc(),
-            MovieStatus.CANDIDATE: Movie.created_at.desc(),
-        }.get(tab, Movie.stage.desc())]
+        moved = Movie.status_changed_at.desc().nulls_last()
+        order = {
+            'newest': [Movie.created_at.desc()],
+            'progress': [Movie.stage.desc(), moved],
+            'moved': [moved, Movie.updated_at.desc()],
+            'completed': [Movie.completed_at.desc().nulls_last()],
+            'douban': [Movie.douban_rating.desc().nulls_last(), Movie.douban_votes.desc().nulls_last()],
+            'tmdb': [Movie.tmdb_rating.desc().nulls_last(), Movie.tmdb_votes.desc().nulls_last()],
+            'year': [Movie.year.desc().nulls_last(), Movie.created_at.desc()],
+            'mine': [Movie.personal_rating.desc().nulls_last(), moved],
+        }.get(sort)
         if tab == MovieStatus.CANDIDATE:
             grouped = select(category, func.count()).where(Movie.status == MovieStatus.CANDIDATE)
             if q:
@@ -165,21 +195,16 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
                        for key, label in filter_labels]
             if availability != 'all':
                 query = query.where(category == availability)
-            priority = case((Movie.stage >= Stage.STREAMING, 0), (Movie.stage == Stage.DATED, 1),
-                            (category == 'unconfirmed', 2), else_=3)
-            order = {
-                'newest': [Movie.created_at.desc()],
-                'available': [priority, Movie.created_at.desc()],
-                'douban': [Movie.douban_rating.desc().nulls_last(), Movie.douban_votes.desc().nulls_last()],
-                'tmdb': [Movie.tmdb_rating.desc().nulls_last(), Movie.tmdb_votes.desc().nulls_last()],
-                'year': [Movie.year.desc().nulls_last(), Movie.created_at.desc()],
-            }[sort]
+            if sort == 'available':
+                priority = case((Movie.stage >= Stage.STREAMING, 0), (Movie.stage == Stage.DATED, 1),
+                                (category == 'unconfirmed', 2), else_=3)
+                order = [priority, Movie.created_at.desc()]
         rows = session.execute(query.order_by(*order, Movie.id.desc()).add_columns(
             func.json_extract(Movie.details, '$.is_rerelease')
         )).all()
         movies = [row[0] for row in rows]
         rerelease_ids = {row[0].id for row in rows if row[1]}
-    return _render(
+    response = _render(
         request,
         "movies.html",
         nav="movies",
@@ -193,11 +218,20 @@ def movies_page(request: Request, tab: str = MovieStatus.MONITORING, q: str = ""
         availability=availability,
         candidate_filters=filters,
         sort=sort,
-        sort_options=sort_options,
+        default_sort=default_sort,
+        sort_options=[{'key': key, 'label': label,
+                       'url': '/movies?' + urlencode({k: v for k, v in (('tab', tab), ('availability', availability), ('q', q), ('sort', key)) if v and v != 'all'})}
+                      for key, label in sort_options],
         clear_filter_url='/movies?' + urlencode({'tab': tab, 'sort': sort}),
         jobs=_jobs_view(),
         stage_labels=STAGE_LABELS,
     )
+    if chosen:
+        if sort == default_sort:
+            response.delete_cookie(SORT_COOKIE + tab, path='/movies')
+        else:
+            response.set_cookie(SORT_COOKIE + tab, sort, max_age=3600 * 24 * 365, path='/movies', samesite='lax')
+    return response
 
 
 @router.get("/movies/{movie_id}", response_class=HTMLResponse)
@@ -751,12 +785,25 @@ def playback_status(ids: str = '') -> JSONResponse:
     return JSONResponse({'movies': {str(movie_id): value for movie_id, value in status.items()}})
 
 
+# When the link handler last asked for each movie, so the page can tell whether the browser launched it.
+_handler_requests: dict[int, float] = {}
+
+
 @router.get('/playback/movies/{movie_id}')
 def playback_movie(movie_id: int) -> JSONResponse:
     """What the reelready:// link handler on this computer should open, and with which player."""
+    _handler_requests[movie_id] = time.monotonic()
     settings = load_settings()
     status = movie_status(settings, movie_id)
     return JSONResponse({**status, 'player': settings.playback.player, 'player_path': settings.playback.player_path},
+                        headers={'Cache-Control': 'no-store'})
+
+
+@router.get('/playback/movies/{movie_id}/handler')
+def playback_handler_seen(movie_id: int) -> JSONResponse:
+    """Seconds since the link handler last fetched this movie, measured on the server's own clock."""
+    seen = _handler_requests.get(movie_id)
+    return JSONResponse({'age': None if seen is None else round(time.monotonic() - seen, 2)},
                         headers={'Cache-Control': 'no-store'})
 
 
